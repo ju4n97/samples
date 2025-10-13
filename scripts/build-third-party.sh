@@ -12,10 +12,10 @@ mkdir -p "$BIN_DIR"
 # --- llama.cpp ---
 echo "Building llama.cpp (CPU)..."
 LLAMA_DIR="$THIRD_PARTY/llama.cpp"
-LLAMA_BUILD="$LLAMA_DIR/build"
+LLAMA_BUILD="$LLAMA_DIR/build-cpu"
 
 if [[ ! -f "$LLAMA_DIR/CMakeLists.txt" ]]; then
-  echo "Error: llama.cpp not found. Run: git submodule update --init" >&2
+  echo "[!] llama.cpp not found. Run: git submodule update --init" >&2
   exit 1
 fi
 
@@ -23,8 +23,23 @@ mkdir -p "$LLAMA_BUILD"
 cd "$LLAMA_BUILD"
 cmake .. -DLLAMA_BUILD_CLI=ON -DLLAMA_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build . --target llama-cli -j"$(nproc)"
-cp bin/llama-cli "$BIN_DIR/"
+cp bin/llama-cli "$BIN_DIR/llama-cli-cpu"
 
 # --- whisper.cpp ---
+echo "Building whisper.cpp (CPU)..."
+WHISPER_DIR="$THIRD_PARTY/whisper.cpp"
+WHISPER_BUILD="$WHISPER_DIR/build-cpu"
 
-echo "✅ All third-party CPU binaries built."
+if [[ ! -f "$WHISPER_DIR/CMakeLists.txt" ]]; then
+  echo "[!] whisper.cpp not found. Run: git submodule update --init" >&2
+  exit 1
+fi
+
+mkdir -p "$WHISPER_BUILD"
+cd "$WHISPER_BUILD"
+cmake .. -DWHISPER_BUILD_CLI=ON -DWHISPER_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build . --target whisper-cli -j"$(nproc)"
+cp bin/whisper-cli "$BIN_DIR/whisper-cli-cpu"
+
+
+echo "[+] All third-party CPU binaries built."
