@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://syn4pse.pages.dev/schemas/syn4pse.v1.schema.json",
+  "title": "SYN4PSE Configuration",
+  "description": "Configuration for SYN4PSE.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "models", "services"],
+
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1",
+      "description": "Config version"
+    },
+
+    "storage": {
+      "$ref": "#/$defs/StorageConfig"
+    },
+
+    "models": {
+      "type": "object",
+      "description": "Named model definitions. Key is model ID.",
+      "additionalProperties": {
+        "$ref": "#/$defs/ModelConfig"
+      }
+    },
+
+    "services": {
+      "$ref": "#/$defs/ServicesConfig"
+    }
+  },
+
+  "$defs": {
+    "StorageConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "auto_download": {
+          "type": "boolean",
+          "description": "Whether to auto-download missing models at startup.",
+          "default": true
+        },
+        "models_dir": {
+          "type": "string",
+          "description": "Local directory to store downloaded models."
+        }
+      }
+    },
+
+    "ModelConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "backend", "source", "order"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["llm", "stt", "tts", "nlu"],
+          "description": "Model type: llm, stt, tts, or nlu."
+        },
+        "backend": {
+          "type": "string",
+          "description": "Inference backend to use (e.g., 'faster-whisper', 'llama.cpp')."
+        },
+        "source": {
+          "$ref": "#/$defs/ModelSource"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Display order in UI. Lower = appears first."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags for filtering or grouping in UI (e.g., ['multilingual', 'streaming'])."
+        }
+      }
+    },
+
+    "ModelSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Union of supported model sources. Exactly one source type must be provided.",
+      "properties": {
+        "huggingface": {
+          "$ref": "#/$defs/ModelSourceHuggingface"
+        }
+      },
+      "minProperties": 1,
+      "maxProperties": 1
+    },
+
+    "ModelSourceHuggingface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo"],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "description": "Hugging Face repository ID (e.g., 'Systran/faster-whisper-tiny')."
+        },
+        "revision": {
+          "type": "string",
+          "description": "An optional Git revision id which can be a branch name, tag or commit hash."
+        },
+        "repo_type": {
+          "type": "string",
+          "enum": ["model", "dataset", "space"],
+          "default": "model",
+          "description": "Type of Hugging Face repository."
+        },
+        "include": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns of files to include."
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns of files to exclude."
+        },
+        "force_download": {
+          "type": "boolean",
+          "default": false,
+          "description": "Force download even if files exist in cache."
+        },
+        "token": {
+          "type": "string",
+          "description": "Hugging Face access token."
+        },
+        "max_workers": {
+          "type": "integer",
+          "default": 8,
+          "description": "Maximum number of parallel download workers."
+        }
+      }
+    },
+
+    "ProfileConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["compute_type", "display_name"],
+      "properties": {
+        "compute_type": {
+          "type": "string",
+          "enum": [
+            "int8",
+            "int8_float32",
+            "int8_float16",
+            "int8_bfloat16",
+            "int16",
+            "float16",
+            "bfloat16",
+            "float32"
+          ],
+          "description": "Quantization type to use for inference."
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Human-readable name for users or admins."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description for users or admins."
+        }
+      }
+    },
+
+    "ServicesConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "llm": {
+          "$ref": "#/$defs/ServiceAssignment"
+        },
+        "nlu": {
+          "$ref": "#/$defs/ServiceAssignment"
+        },
+        "stt": {
+          "$ref": "#/$defs/ServiceAssignment"
+        },
+        "tts": {
+          "$ref": "#/$defs/ServiceAssignment"
+        }
+      }
+    },
+
+    "ServiceAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["models"],
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of model IDs this service should load.",
+          "minItems": 0
+        }
+      }
+    }
+  }
+}

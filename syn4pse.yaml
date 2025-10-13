@@ -1,0 +1,203 @@
+# yaml-language-server: $schema=jsonschema/syn4pse.v1.schema.json
+
+version: "1"
+
+storage:
+  auto_download: true
+  # if auto_download is enabled, SYN4PSE will download and store the models in a
+  # predefined default cache directory based on the OS. This can be overridden with:
+  # models_dir: <my-custom-location> (ex: ~/.cache/syn4pse/models/)
+
+models:
+  llama-cpp-qwen2.5-1.5b-instruct-q4_k_m:
+    type: llm
+    backend: llama.cpp
+    source:
+      huggingface:
+        repo: Qwen/Qwen2.5-1.5B-Instruct-GGUF
+        include: ["qwen2.5-1.5b-instruct-q4_k_m.gguf"]
+    order: 10
+
+  llama-cpp-qwen2.5-1.5b-instruct-q5_k_m:
+    type: llm
+    backend: llama.cpp
+    source:
+      huggingface:
+        repo: Qwen/Qwen2.5-1.5B-Instruct-GGUF
+        include: ["qwen2.5-1.5b-instruct-q5_k_m.gguf"]
+    order: 20
+
+  llama-cpp-phi-3.5-mini-instruct-q4_k_m:
+    type: llm
+    backend: llama.cpp
+    source:
+      huggingface:
+        repo: QuantFactory/Phi-3.5-mini-instruct-GGUF
+        include: ["Phi-3.5-mini-instruct.Q4_K_M.gguf"]
+    order: 30
+
+  llama-cpp-tinyllama-1.1b-chat-v1.0:
+    type: llm
+    backend: llama.cpp
+    source:
+      huggingface:
+        repo: TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF
+        include: ["tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"]
+    order: 40
+
+  whisper-cpp-tiny:
+    type: stt
+    backend: whisper.cpp
+    source:
+      huggingface:
+        repo: ggerganov/whisper.cpp
+        include: ["ggml-tiny.bin"]
+    tags: [multilingual, streaming]
+    order: 10
+
+  whisper-cpp-base:
+    type: stt
+    backend: whisper.cpp
+    source:
+      huggingface:
+        repo: ggerganov/whisper.cpp
+        include: ["ggml-base.bin"]
+    tags: [multilingual, streaming]
+    order: 20
+
+  whisper-cpp-small:
+    type: stt
+    backend: whisper.cpp
+    source:
+      huggingface:
+        repo: ggerganov/whisper.cpp
+        include: ["ggml-small.bin"]
+    tags: [multilingual, streaming]
+    order: 30
+
+  whisper-cpp-medium:
+    type: stt
+    backend: whisper.cpp
+    source:
+      huggingface:
+        repo: ggerganov/whisper.cpp
+        include: ["ggml-medium.bin"]
+    tags: [multilingual, streaming]
+    order: 40
+
+  whisper-cpp-large-v2:
+    type: stt
+    backend: whisper.cpp
+    source:
+      huggingface:
+        repo: ggerganov/whisper.cpp
+        include: ["ggml-large-v2.bin"]
+    tags: [multilingual, streaming, high-accuracy]
+    order: 50
+
+  whisper-cpp-large-v3:
+    type: stt
+    backend: whisper.cpp
+    source:
+      huggingface:
+        repo: ggerganov/whisper.cpp
+        include: ["ggml-large-v3.bin"]
+    tags: [multilingual, streaming, high-accuracy, latest]
+    order: 60
+
+  piper-es-mx-ald-medium:
+    type: tts
+    backend: piper
+    source:
+      huggingface:
+        repo: rhasspy/piper-voices
+        include:
+          - "es/es_MX/ald/medium/es_MX-ald-medium.onnx"
+          - "es/es_MX/ald/medium/es_MX-ald-medium.onnx.json"
+    tags: [spanish, mexico, neutral, medium-quality]
+    order: 10
+
+  piper-es-mx-claude-high:
+    type: tts
+    backend: piper
+    source:
+      huggingface:
+        repo: rhasspy/piper-voices
+        include:
+          - "es/es_MX/claude/high/es_MX-claude-high.onnx"
+          - "es/es_MX/claude/high/es_MX-claude-high.onnx.json"
+    tags: [spanish, mexico, expressive, high-quality]
+    order: 20
+
+  piper-es-ar-daniela-high:
+    type: tts
+    backend: piper
+    source:
+      huggingface:
+        repo: rhasspy/piper-voices
+        include:
+          - "es/es_AR/daniela/high/es_AR-daniela-high.onnx"
+          - "es/es_AR/daniela/high/es_AR-daniela-high.onnx.json"
+    tags: [spanish, argentina, high-quality]
+    order: 30
+
+  piper-es-es-carlfm-x-low:
+    type: tts
+    backend: piper
+    source:
+      huggingface:
+        repo: rhasspy/piper-voices
+        include:
+          - "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx"
+          - "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx.json"
+    tags: [spanish, spain, fast, low-quality]
+    order: 40
+
+  piper-en-us-amy-low:
+    type: tts
+    backend: piper
+    source:
+      huggingface:
+        repo: rhasspy/piper-voices
+        include:
+          - "en/en_US/amy/low/en_US-amy-low.onnx"
+          - "en/en_US/amy/low/en_US-amy-low.onnx.json"
+    tags: [english, us, fast]
+    order: 50
+
+  piper-en-us-lessac-high:
+    type: tts
+    backend: piper
+    source:
+      huggingface:
+        repo: rhasspy/piper-voices
+        include:
+          - "en/en_US/lessac/high/en_US-lessac-high.onnx"
+          - "en/en_US/lessac/high/en_US-lessac-high.onnx.json"
+    tags: [english, us, broadcast-quality, high-quality]
+    order: 60
+
+services:
+  llm:
+    models:
+      - llama-cpp-qwen2.5-1.5b-instruct-q4_k_m
+      - llama-cpp-qwen2.5-1.5b-instruct-q5_k_m
+      - llama-cpp-phi-3.5-mini-instruct-q4_k_m
+      - llama-cpp-tinyllama-1.1b-chat-v1.0
+
+  stt:
+    models:
+      - whisper-cpp-tiny
+      - whisper-cpp-base
+      # - whisper-cpp-small
+      # - whisper-cpp-medium
+      # - whisper-cpp-large-v2
+      # - whisper-cpp-large-v3
+
+  tts:
+    models:
+      - piper-es-mx-ald-medium
+      - piper-es-mx-claude-high
+      - piper-es-ar-daniela-high
+      - piper-en-us-amy-low
+      - piper-en-us-lessac-high

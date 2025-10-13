@@ -70,7 +70,7 @@ flowchart TD
 
 ## Backends de inferencia
 
-SYN4PSE delega la inferencia a motores optimizados en C/C++, como [llama.cpp](https://github.com/ggml-org/llama.cpp) y [whisper.cpp](https://github.com/ggerganov/whisper.cpp). Estos se compilan como binarios independientes para distintas plataformas de ejecución (CPU, CUDA, Vulkan, Metal) mediante [CMake](https://cmake.org/) y se exponen a través SYN4PSE server (HTTP y gRPC).
+SYN4PSE delega la inferencia a motores optimizados en C/C++, como [llama.cpp](https://github.com/ggml-org/llama.cpp) y [whisper.cpp](https://github.com/ggerganov/whisper.cpp). Estos se compilan como binarios independientes para distintas plataformas de ejecución (CPU, CUDA, Vulkan, Metal) mediante [CMake](https://cmake.org/) y se exponen a través de SYN4PSE server (HTTP y gRPC).
 
 ### Compilación de backends
 
@@ -92,14 +92,11 @@ Puede contribuir a este proyecto añadiendo soporte para nuevos backends de infe
 
 ## Backends soportados
 
-| **Tipo** | **Backend**                                                 | **Repositorio**                                    | **Estado**       | **Aceleración soportada** |
-| -------- | ----------------------------------------------------------- | -------------------------------------------------- | ---------------- | ------------------------- |
-| **LLM**  | [llama.cpp](https://github.com/ggml-org/llama.cpp)          | [backends/llama-cpp](backends/llama-cpp)           | 🟡 En desarrollo | CPU, CUDA 11/12           |
-|          | [vLLM](https://github.com/vllm-project/vllm)                | [backends/vllm](backends/vllm)                     | 🟡 En desarrollo | CPU, CUDA 12              |
-| **STT**  | [whisper.cpp](https://github.com/ggerganov/whisper.cpp)     | [backends/whisper-cpp](backends/whisper-cpp)       | 🟡 En desarrollo | CPU, CUDA 12              |
-|          | [Faster Whisper](https://github.com/SYSTRAN/faster-whisper) | [backends/faster-whisper](backends/faster-whisper) | 🟡 En desarrollo | CPU, CUDA 12              |
-| **TTS**  | [Kokoro](https://github.com/hexgrad/kokoro)                 | [backends/kokoro](backends/kokoro)                 | 🟡 En desarrollo | CPU, CUDA 12              |
-|          | [Piper](https://github.com/OHF-Voice/piper1-gpl)            | [backends/piper](backends/piper)                   | 🟡 En desarrollo | CPU                       |
+| **Tipo** | **Backend**                                             | **Repositorio**                              | **Estado**       | **Aceleración soportada** |
+| -------- | ------------------------------------------------------- | -------------------------------------------- | ---------------- | ------------------------- |
+| **LLM**  | [llama.cpp](https://github.com/ggml-org/llama.cpp)      | [backends/llama-cpp](backends/llama-cpp)     | 🟡 En desarrollo | CPU, CUDA 11/12           |
+| **STT**  | [whisper.cpp](https://github.com/ggerganov/whisper.cpp) | [backends/whisper-cpp](backends/whisper-cpp) | 🟡 En desarrollo | CPU, CUDA 12              |
+| **TTS**  | [Piper](https://github.com/OHF-Voice/piper1-gpl)        | [backends/piper](backends/piper)             | 🟡 En desarrollo | CPU                       |
 
 ## Instalación
 
