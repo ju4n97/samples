@@ -36,11 +36,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "auto_download": {
-          "type": "boolean",
-          "description": "Whether to auto-download missing models at startup.",
-          "default": true
-        },
         "models_dir": {
           "type": "string",
           "description": "Local directory to store downloaded models."
@@ -144,16 +139,7 @@
       "properties": {
         "compute_type": {
           "type": "string",
-          "enum": [
-            "int8",
-            "int8_float32",
-            "int8_float16",
-            "int8_bfloat16",
-            "int16",
-            "float16",
-            "bfloat16",
-            "float32"
-          ],
+          "enum": ["int8", "int8_float32", "int8_float16", "int8_bfloat16", "int16", "float16", "bfloat16", "float32"],
           "description": "Quantization type to use for inference."
         },
         "display_name": {

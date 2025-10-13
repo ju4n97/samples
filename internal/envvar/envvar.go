@@ -9,4 +9,10 @@ const (
 
 	// Syn4pseServerGRPCPort is the environment variable used to determine the gRPC port
 	Syn4pseServerGRPCPort = "SYN4PSE_SERVER_GRPC_PORT"
+
+	// Syn4pseModelsPath is the environment variable used to determine the path to the models
+	Syn4pseModelsPath = "SYN4PSE_MODELS_PATH"
+
+	// Syn4pseConfigPath is the environment variable used to determine the path to the config
+	Syn4pseConfigPath = "SYN4PSE_CONFIG_PATH"
 )

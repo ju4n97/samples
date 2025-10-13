@@ -4,7 +4,40 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
+
+	"github.com/ekisa-team/syn4pse/internal/envvar"
 )
+
+// DefaultHTTPPort returns the default HTTP port.
+// Precedence:
+// 1. SYN4PSE_SERVER_HTTP_PORT environment variable.
+// 2. 8080
+func DefaultHTTPPort() int {
+	if p := os.Getenv(envvar.Syn4pseServerHTTPPort); p != "" {
+		value, err := strconv.ParseInt(p, 10, 32)
+		if err == nil {
+			return int(value)
+		}
+	}
+
+	return 8080
+}
+
+// DefaultGRPCPort returns the default gRPC port.
+// Precedence:
+// 1. SYN4PSE_SERVER_GRPC_PORT environment variable.
+// 2. 50051
+func DefaultGRPCPort() int {
+	if p := os.Getenv(envvar.Syn4pseServerGRPCPort); p != "" {
+		value, err := strconv.ParseInt(p, 10, 32)
+		if err == nil {
+			return int(value)
+		}
+	}
+
+	return 50051
+}
 
 // DefaultConfigPath returns the default path for SYN4PSE config directory.
 func DefaultConfigPath() string {

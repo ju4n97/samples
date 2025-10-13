@@ -17,7 +17,6 @@ const (
 	defaultRetryDelay = 2 * time.Second
 	defaultMaxRetries = 3
 	defaultTimeout    = 5 * time.Minute
-	markerFilename    = ".syn4pse-downloaded"
 )
 
 // HuggingFaceDownloader downloads a model from Hugging Face.
@@ -41,15 +40,6 @@ func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *confi
 	}
 
 	fullPath := filepath.Join(targetDir, repo)
-	markerPath := filepath.Join(fullPath, markerFilename)
-	markerContent := d.markerContent(repo, hfSource.Revision)
-
-	if _, err := os.Stat(markerPath); err == nil {
-		if !d.shouldRedownload(markerPath, markerContent) {
-			slog.Info("Model already downloaded and up-to-date (marker match), skipping", "repo", repo, "path", fullPath)
-			return fullPath, true, nil
-		}
-	}
 
 	if err := os.MkdirAll(fullPath, 0o755); err != nil {
 		return "", false, fmt.Errorf("failed to create directory: %w", err)
@@ -98,11 +88,6 @@ func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *confi
 		cancel()
 
 		if err == nil {
-			if err := os.WriteFile(markerPath, []byte(markerContent), 0o644); err != nil {
-				slog.Warn("Failed to write download marker", "path", markerPath, "error", err)
-			} else {
-				slog.Info("Download marker updated", "path", markerPath)
-			}
 
 			slog.Info("Model downloaded successfully", "repo", repo, "path", fullPath, "attempt", attempt+1)
 			return fullPath, false, nil
@@ -119,29 +104,4 @@ func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *confi
 	}
 
 	return "", false, lastErr
-}
-
-// markerContent generates the expected content of the marker file.
-// Used to detect if we need to redownload due to config change.
-func (d *HuggingFaceDownloader) markerContent(repo, revision string) string {
-	return fmt.Sprintf("repo: %s\nrevision: %s\n", repo, revision)
-}
-
-// shouldRedownload checks if the model should be redownloaded by comparing marker content.
-func (d *HuggingFaceDownloader) shouldRedownload(markerPath, expectedContent string) bool {
-	content, err := os.ReadFile(markerPath)
-	if err != nil {
-		slog.Debug("Marker file missing or unreadable", "path", markerPath, "error", err)
-		return true
-	}
-
-	if string(content) != expectedContent {
-		slog.Info("Model config changed (marker mismatch), will redownload",
-			"marker_path", markerPath,
-			"expected_snippet", expectedContent,
-			"actual_snippet", string(content))
-		return true
-	}
-
-	return false
 }

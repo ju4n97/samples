@@ -22,8 +22,7 @@ type Config struct {
 
 // StorageConfig holds configuration for caching and auto-download.
 type StorageConfig struct {
-	ModelsDir    string `yaml:"models_dir,omitempty" json:"models_dir,omitempty"`
-	AutoDownload bool   `yaml:"auto_download,omitempty" json:"auto_download,omitempty"`
+	ModelsDir string `yaml:"models_dir,omitempty" json:"models_dir,omitempty"`
 }
 
 // ModelConfig holds configuration for a specific model.

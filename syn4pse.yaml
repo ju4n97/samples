@@ -2,11 +2,10 @@
 
 version: "1"
 
-storage:
-  auto_download: true
-  # if auto_download is enabled, SYN4PSE will download and store the models in a
-  # predefined default cache directory based on the OS. This can be overridden with:
-  # models_dir: <my-custom-location> (ex: ~/.cache/syn4pse/models/)
+# storage:
+# SYN4PSE will download and store the models in a predefined default cache directory
+# based on the OS. This can be overridden with:
+# models_dir: <my-custom-location> (ex: ~/.cache/syn4pse/models/)
 
 models:
   llama-cpp-qwen2.5-1.5b-instruct-q4_k_m:
