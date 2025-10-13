@@ -1,0 +1,122 @@
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  # Version control
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || date -u '+%Y%m%d-%H%M%S'
+  GIT_COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  GIT_BRANCH:
+    sh: git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown"
+  BUILD_TIME:
+    sh: date -u '+%Y-%m-%d_%H:%M:%S'
+  BUILD_BY:
+    sh: whoami
+
+  # Build flags for version embedding
+  LD_FLAGS:
+    sh: |
+      MODULE=$(go list -m)
+      echo "-s -w \
+        -X '${MODULE}/runtime/version.Version={{.VERSION}}' \
+        -X '${MODULE}/runtime/version.Commit={{.GIT_COMMIT}}' \
+        -X '${MODULE}/runtime/version.Branch={{.GIT_BRANCH}}' \
+        -X '${MODULE}/runtime/version.BuildTime={{.BUILD_TIME}}' \
+        -X '${MODULE}/runtime/version.BuildBy={{.BUILD_BY}}'"
+
+tasks:
+  default:
+    desc: Show all available tasks
+    cmd: task --list
+    silent: true
+
+  help:
+    desc: Show all available tasks
+    cmd: task
+    silent: true
+
+  # =============================================================================
+  # SETUP & DEPENDENCIES
+  # =============================================================================
+
+  install:
+    desc: Install dependencies and dev tools
+    cmds:
+      - task: gen-proto
+      - go mod tidy
+      - go install github.com/evilmartians/lefthook@latest
+      - go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+  build-third-party:
+    desc: Install third-party dependencies
+    cmds:
+      - ./scripts/build-third-party.sh
+
+  build-third-party-cuda:
+    desc: Install third-party dependencies with CUDA support
+    cmds:
+      - ./scripts/build-third-party-cuda.sh
+
+  # =============================================================================
+  # DEVELOPMENT
+  # =============================================================================
+
+  dev:
+    desc: Start kivox-llm in dev mode
+    cmd: go run ./cmd/syn4pse {{.CLI_ARGS}}
+
+  # =============================================================================
+  # TESTING
+  # =============================================================================
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -cpu 24 -race -count=1 -timeout=30s
+
+  # =============================================================================
+  # QUALITY
+  # =============================================================================
+
+  lint:
+    desc: Lint code
+    cmds:
+      - golangci-lint fmt ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - golangci-lint fmt ./...
+
+  # =============================================================================
+  # CODE GENERATION
+  # =============================================================================
+
+  gen-proto:
+    desc: Generate Go code from protobuf definitions
+    cmds:
+      - protoc -I proto --go_out=. --go-grpc_out=. $(find proto -name '*.proto')
+      - go mod tidy
+
+  # =============================================================================
+  # MISC
+  # =============================================================================
+
+  dumpfiles:
+    desc: Dump all files in a specific directory to stdout
+    cmds:
+      - ./scripts/dumpfiles.sh {{.CLI_ARGS}}
+
+  version:
+    desc: Show version information
+    cmds:
+      - |
+        echo "Version:    {{.VERSION}}"
+        echo "Commit:     {{.GIT_COMMIT}}"
+        echo "Branch:     {{.GIT_BRANCH}}"
+        echo "Built:      {{.BUILD_TIME}}"
+        echo "Built by:   {{.BUILD_BY}}"
+    silent: true

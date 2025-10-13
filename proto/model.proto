@@ -1,0 +1,561 @@
+syntax = "proto3";
+
+package model.v1;
+
+option go_package = "internal/model/v1;modelv1";
+
+// ModelService provides a unified interface for loading, managing, and
+// performing inference across different types of AI models (STT, TTS, LLM,
+// embeddings, etc.).
+service ModelService {
+  // Infer performs synchronous inference for non-streaming use cases.
+  // Use this for:
+  // - Complete audio transcription (STT)
+  // - Full text generation without streaming (LLM)
+  // - Batch embeddings generation
+  //
+  // For real-time/streaming inference, use InferStream instead.
+  rpc Infer(InferRequest) returns (InferResponse);
+
+  // InferStream performs streaming inference for real-time use cases.
+  // Use this for:
+  // - Real-time audio transcription (STT)
+  // - Token-by-token text generation (LLM)
+  // - Streaming audio synthesis (TTS)
+  //
+  // The client can send multiple requests (for audio chunks) and receive
+  // multiple responses as they become available
+  rpc InferStream(stream InferRequest) returns (stream InferResponse);
+
+  // LoadModel loads a model into memory, making it available for inference.
+  // Models must be loaded before they can be used for inference.
+  rpc LoadModel(LoadModelRequest) returns (LoadModelResponse);
+
+  // UnloadModel removes a model from memory, freeing GPU/CPU resources.
+  // After unloading, the model cannot be used for inference until loaded again.
+  rpc UnloadModel(UnloadModelRequest) returns (UnloadModelResponse);
+
+  // ListModels returns information about all models currently managed
+  // by the service, including both loaded and available models.
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+
+  // GetModelInfo retrieves detailed information about a specific model,
+  // including its configuration, status, and capabilities.
+  rpc GetModelInfo(GetModelInfoRequest) returns (GetModelInfoResponse);
+
+  // Health checks the service health and returns status of all loaded models.
+  // Useful for monitoring and load balancing.
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// ==================== Common Types ====================
+
+// ModelType defines the category of AI model.
+enum ModelType {
+  MODEL_TYPE_UNSPECIFIED = 0;
+  MODEL_TYPE_STT = 1; // Speech-to-Text (e.g., Whisper, Vosk)
+  MODEL_TYPE_TTS = 2; // Text-to-Speech (e.g., Kokoro, Piper, Coqui)
+  MODEL_TYPE_LLM = 3; // Large Language Model (e.g., Llama, Mistral)
+  MODEL_TYPE_EMBEDDING =
+      4;                 // Embedding model (e.g., BERT, sentence-transformers)
+  MODEL_TYPE_VISION = 5; // Vision model (e.g., CLIP, vision transformers)
+}
+
+// ModelStatus represents the current state of a model.
+enum ModelStatus {
+  MODEL_STATUS_UNSPECIFIED = 0;
+  MODEL_STATUS_LOADING = 1;   // Model is currently being loaded
+  MODEL_STATUS_LOADED = 2;    // Model is loaded and ready for inference
+  MODEL_STATUS_UNLOADING = 3; // Model is being unloaded
+  MODEL_STATUS_UNLOADED = 4;  // Model is not loaded
+  MODEL_STATUS_ERROR = 5;     // Model encountered an error
+}
+
+// AudioFormat specifies the encoding format for audio data.
+enum AudioFormat {
+  AUDIO_FORMAT_UNSPECIFIED = 0;
+  AUDIO_FORMAT_PCM_16 = 1;  // 16-bit PCM
+  AUDIO_FORMAT_PCM_32 = 2;  // 32-bit PCM
+  AUDIO_FORMAT_FLOAT32 = 3; // 32-bit float
+  AUDIO_FORMAT_OPUS = 4;    // Opus codec
+  AUDIO_FORMAT_MP3 = 5;     // MP3
+  AUDIO_FORMAT_WAV = 6;     // WAV container
+  AUDIO_FORMAT_FLAC = 7;    // FLAC lossless
+}
+
+// ==================== Inference ====================
+
+// InferRequest contains the input data and parameters for model inference.
+message InferRequest {
+  // model_id uniquely identifies which model to use for inference.
+  // This must match a model_id from a LoadModel call.
+  string model_id = 1;
+
+  // Input data to send to the model. Exactly one must be set based on model
+  // type.
+  oneof input {
+    // audio: Raw audio bytes for STT or TTS models.
+    AudioInput audio = 2;
+
+    // text: Text input for LLM or TTS models.
+    TextInput text = 3;
+
+    // embeddings: Input for embedding models.
+    EmbeddingInput embedding = 4;
+
+    // image: Image input for vision models.
+    ImageInput image = 5;
+  }
+
+  // parameters: Model-specific inference parameters.
+  map<string, string> parameters = 6;
+
+  // request_id: Optional client-provided identifier for tracking requests.
+  string request_id = 7;
+}
+
+// AudioInput represents audio data for STT or TTS inference.
+message AudioInput {
+  // data: Raw audio bytes in the specified format.
+  bytes data = 1;
+
+  // format: Audio encoding format.
+  AudioFormat format = 2;
+
+  // sample_rate: Audio sample rate in Hz (e.g., 16000, 44100).
+  int32 sample_rate = 3;
+
+  // channels: Number of audio channels (1 for mono, 2 for stereo).
+  int32 channels = 4;
+
+  // is_final: For streaming audio, indicates if this is the final chunk.
+  bool is_final = 5;
+}
+
+// TextInput represents text data for LLM or TTS inference.
+message TextInput {
+  // text: The input text string.
+  string text = 1;
+
+  // context: Optional conversation context or system prompt for LLMs.
+  repeated MessageContext context = 2;
+}
+
+// MessageContext represents a single message in a conversation context.
+message MessageContext {
+  // role: The role of the message sender (e.g., "system", "user", "assistant").
+  string role = 1;
+
+  // content: The message content.
+  string content = 2;
+
+  // metadata: Optional metadata for the message.
+  map<string, string> metadata = 3;
+}
+
+// EmbeddingInput represents input for embedding models.
+message EmbeddingInput {
+  // texts: One or more texts to generate embeddings for.
+  repeated string texts = 1;
+
+  // normalize: Whether to normalize the embedding vectors.
+  bool normalize = 2;
+}
+
+// ImageInput represents image data for vision models.
+message ImageInput {
+  // data: Raw image bytes (JPEG, PNG, etc.).
+  bytes data = 1;
+
+  // format: Image format (e.g., "jpeg", "png").
+  string format = 2;
+}
+
+// InferResponse contains the inference results.
+message InferResponse {
+  // request_id: Matches the request_id from the InferRequest.
+  string request_id = 1;
+
+  // Output data from the model. Exactly one will be set based on model type.
+  oneof output {
+    // text: Generated or transcribed text from LLM or STT models.
+    TextOutput text = 2;
+
+    // audio: Generated audio from TTS models.
+    AudioOutput audio = 3;
+
+    // embeddings: Generated embedding vectors.
+    EmbeddingOutput embeddings = 4;
+
+    // vision: Output from vision models.
+    VisionOutput vision = 5;
+  }
+
+  // metadata: Additional information about the inference.
+  InferenceMetadata metadata = 6;
+
+  // is_final: For streaming responses, indicates if this is the final chunk.
+  bool is_final = 7;
+
+  // error: Error information if inference failed.
+  Error error = 8;
+}
+
+// TextOutput represents generated or transcribed text.
+message TextOutput {
+  // text: The output text string.
+  string text = 1;
+
+  // tokens: For LLMs, the individual tokens generated.
+  repeated string tokens = 2;
+
+  // alternatives: Alternative transcriptions (for STT) or generations.
+  repeated TextAlternative alternatives = 3;
+
+  // finish_reason: Why generation stopped (e.g., "stop", "length",
+  // "eos_token").
+  string finish_reason = 4;
+}
+
+// TextAlternative represents an alternative output option.
+message TextAlternative {
+  // text: The alternative text.
+  string text = 1;
+
+  // confidence: Confidence score (0.0-1.0).
+  float confidence = 2;
+}
+
+// AudioOutput represents generated audio.
+message AudioOutput {
+  // data: Raw audio bytes.
+  bytes data = 1;
+
+  // format: Audio encoding format.
+  AudioFormat format = 2;
+
+  // sample_rate: Audio sample rate in Hz.
+  int32 sample_rate = 3;
+
+  // channels: Number of audio channels.
+  int32 channels = 4;
+
+  // duration_ms: Duration of audio in milliseconds.
+  int32 duration_ms = 5;
+}
+
+// EmbeddingOutput represents embedding vectors.
+message EmbeddingOutput {
+  // embeddings: One or more embedding vectors.
+  repeated Embedding embeddings = 1;
+}
+
+// Embedding represents a single embedding vector.
+message Embedding {
+  // vector: The embedding vector values.
+  repeated float vector = 1;
+
+  // dimension: Dimensionality of the embedding.
+  int32 dimension = 2;
+}
+
+// VisionOutput represents output from vision models.
+message VisionOutput {
+  // labels: Predicted labels or classifications.
+  repeated Label labels = 1;
+
+  // caption: Generated caption for the image.
+  string caption = 2;
+}
+
+// Label represents a classification label.
+message Label {
+  // name: Label name.
+  string name = 1;
+
+  // confidence: Confidence score (0.0-1.0).
+  float confidence = 2;
+}
+
+// InferenceMetadata provides information about the inference operation.
+message InferenceMetadata {
+  // latency_ms: Time taken for inference in milliseconds.
+  int32 latency_ms = 1;
+
+  // tokens_per_second: For LLMs, generation speed.
+  float tokens_per_second = 2;
+
+  // model_version: Version or hash of the model used.
+  string model_version = 3;
+
+  // backend: The backend that performed the inference (e.g., "llama-cpp",
+  // "vllm").
+  string backend = 4;
+
+  // device: Device used for inference (e.g., "cuda:0", "cpu").
+  string device = 5;
+
+  // additional: Any additional backend-specific metadata.
+  map<string, string> additional = 6;
+}
+
+// ==================== Model Management ====================
+
+// LoadModelRequest requests loading a model into memory.
+message LoadModelRequest {
+  // model_id: Unique identifier for this model instance.
+  string model_id = 1;
+
+  // type: The type of model being loaded.
+  ModelType type = 2;
+
+  // backend: The backend to use (e.g., "llama-cpp", "vllm", "faster-whisper").
+  string backend = 3;
+
+  // model_path: Path or identifier for the model.
+  // Can be:
+  // - Local file path: "/models/llama-2-7b.gguf"
+  // - Hugging Face repo: "meta-llama/Llama-2-7b-hf"
+  // - URL: "https://example.com/model.bin"
+  string model_path = 4;
+
+  // config: Backend-specific configuration parameters.
+  // Common parameters:
+  // - n_gpu_layers (int): Number of layers to offload to GPU
+  // - context_size (int): Context window size for LLMs
+  // - batch_size (int): Batch size for inference
+  // - quantization (string): Quantization method (e.g., "q4_0", "q8_0")
+  // - device (string): Device to load on (e.g., "cuda:0", "cpu")
+  map<string, string> config = 5;
+
+  // auto_download: If true, automatically download the model if not found
+  // locally.
+  bool auto_download = 6;
+}
+
+// LoadModelResponse confirms model loading.
+message LoadModelResponse {
+  // model_id: The loaded model's identifier.
+  string model_id = 1;
+
+  // status: Current status of the model.
+  ModelStatus status = 2;
+
+  // info: Detailed information about the loaded model.
+  ModelInfo info = 3;
+
+  // error: Error information if loading failed.
+  Error error = 4;
+}
+
+// UnloadModelRequest requests unloading a model from memory.
+message UnloadModelRequest {
+  // model_id: Identifier of the model to unload.
+  string model_id = 1;
+
+  // force: If true, forcefully unload even if in use.
+  bool force = 2;
+}
+
+// UnloadModelResponse confirms model unloading.
+message UnloadModelResponse {
+  // model_id: The unloaded model's identifier.
+  string model_id = 1;
+
+  // status: Current status of the model.
+  ModelStatus status = 2;
+
+  // error: Error information if unloading failed.
+  Error error = 3;
+}
+
+// ListModelsRequest requests a list of all models.
+message ListModelsRequest {
+  // filter_type: Optional filter by model type.
+  ModelType filter_type = 1;
+
+  // filter_status: Optional filter by model status.
+  ModelStatus filter_status = 2;
+
+  // include_available: If true, include models available but not loaded.
+  bool include_available = 3;
+}
+
+// ListModelsResponse returns a list of models.
+message ListModelsResponse {
+  // models: List of model information.
+  repeated ModelInfo models = 1;
+
+  // total_count: Total number of models (may exceed list size if paginated).
+  int32 total_count = 2;
+}
+
+// GetModelInfoRequest requests information about a specific model.
+message GetModelInfoRequest {
+  // model_id: Identifier of the model.
+  string model_id = 1;
+}
+
+// GetModelInfoResponse returns detailed model information.
+message GetModelInfoResponse {
+  // info: Detailed model information.
+  ModelInfo info = 1;
+
+  // error: Error information if model not found.
+  Error error = 2;
+}
+
+// ModelInfo contains detailed information about a model.
+message ModelInfo {
+  // model_id: Unique identifier for this model instance.
+  string model_id = 1;
+
+  // type: The type of model.
+  ModelType type = 2;
+
+  // backend: The backend implementation.
+  string backend = 3;
+
+  // model_path: Path or identifier of the model.
+  string model_path = 4;
+
+  // status: Current status of the model.
+  ModelStatus status = 5;
+
+  // version: Model version or hash.
+  string version = 6;
+
+  // size_bytes: Size of the model in bytes.
+  int64 size_bytes = 7;
+
+  // memory_usage_bytes: Current memory usage in bytes.
+  int64 memory_usage_bytes = 8;
+
+  // loaded_at: Timestamp when model was loaded (Unix timestamp).
+  int64 loaded_at = 9;
+
+  // capabilities: What this model can do.
+  repeated string capabilities = 10;
+
+  // config: Configuration used to load the model.
+  map<string, string> config = 11;
+
+  // metadata: Additional model metadata.
+  map<string, string> metadata = 12;
+
+  // device: Device the model is loaded on.
+  string device = 13;
+}
+
+// ==================== Health Check ====================
+
+// HealthRequest checks service and model health.
+message HealthRequest {
+  // check_models: If true, include health check for all loaded models.
+  bool check_models = 1;
+}
+
+// HealthResponse returns service health status.
+message HealthResponse {
+  // status: Overall service status.
+  ServiceStatus status = 1;
+
+  // version: Service version.
+  string version = 2;
+
+  // uptime_seconds: Service uptime in seconds.
+  int64 uptime_seconds = 3;
+
+  // model_health: Health status of each loaded model.
+  map<string, ModelHealth> model_health = 4;
+
+  // system_info: System resource information.
+  SystemInfo system_info = 5;
+}
+
+// ServiceStatus represents the health of the service.
+enum ServiceStatus {
+  SERVICE_STATUS_UNSPECIFIED = 0;
+  SERVICE_STATUS_HEALTHY = 1;   // Service is healthy
+  SERVICE_STATUS_DEGRADED = 2;  // Service is running but degraded
+  SERVICE_STATUS_UNHEALTHY = 3; // Service is unhealthy
+}
+
+// ModelHealth represents the health of a specific model.
+message ModelHealth {
+  // model_id: Model identifier.
+  string model_id = 1;
+
+  // is_healthy: Whether the model is healthy.
+  bool is_healthy = 2;
+
+  // last_inference_ms: Time of last successful inference (Unix timestamp).
+  int64 last_inference_ms = 3;
+
+  // error_count: Number of errors since model was loaded.
+  int32 error_count = 4;
+
+  // last_error: Most recent error message, if any.
+  string last_error = 5;
+}
+
+// SystemInfo provides system resource information.
+message SystemInfo {
+  // cpu_usage_percent: CPU usage percentage.
+  float cpu_usage_percent = 1;
+
+  // memory_used_bytes: RAM used in bytes.
+  int64 memory_used_bytes = 2;
+
+  // memory_total_bytes: Total RAM in bytes.
+  int64 memory_total_bytes = 3;
+
+  // gpu_info: Information about available GPUs.
+  repeated GPUInfo gpu_info = 4;
+}
+
+// GPUInfo provides information about a GPU device.
+message GPUInfo {
+  // device_id: GPU device identifier.
+  string device_id = 1;
+
+  // name: GPU name.
+  string name = 2;
+
+  // memory_used_bytes: VRAM used in bytes.
+  int64 memory_used_bytes = 3;
+
+  // memory_total_bytes: Total VRAM in bytes.
+  int64 memory_total_bytes = 4;
+
+  // utilization_percent: GPU utilization percentage.
+  float utilization_percent = 5;
+}
+
+// ==================== Error Handling ====================
+
+// Error represents an error that occurred during processing.
+message Error {
+  // code: Error code for programmatic handling.
+  ErrorCode code = 1;
+
+  // message: Human-readable error message.
+  string message = 2;
+
+  // details: Additional error details.
+  map<string, string> details = 3;
+}
+
+// ErrorCode defines standard error codes.
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_INVALID_REQUEST = 1;       // Request is malformed or invalid
+  ERROR_CODE_MODEL_NOT_FOUND = 2;       // Requested model does not exist
+  ERROR_CODE_MODEL_NOT_LOADED = 3;      // Model exists but is not loaded
+  ERROR_CODE_MODEL_LOAD_FAILED = 4;     // Failed to load model
+  ERROR_CODE_INFERENCE_FAILED = 5;      // Inference operation failed
+  ERROR_CODE_UNSUPPORTED_OPERATION = 6; // Operation not supported by backend
+  ERROR_CODE_RESOURCE_EXHAUSTED = 7;    // Out of memory or other resources
+  ERROR_CODE_TIMEOUT = 8;               // Operation timed out
+  ERROR_CODE_INTERNAL_ERROR = 9;        // Internal server error
+}
