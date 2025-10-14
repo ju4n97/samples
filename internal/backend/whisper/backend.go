@@ -34,9 +34,9 @@ func NewBackend(binPath string) (*Backend, error) {
 	}, nil
 }
 
-// Name returns the backend identifier.
-func (b *Backend) Name() string {
-	return "whisper"
+// Provider returns the backend provider.
+func (b *Backend) Provider() backend.BackendProvider {
+	return backend.BackendProviderWhisperCPP
 }
 
 // Infer transcribes audio to text.
@@ -68,7 +68,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	return &backend.Response{
 		Output: bytes.NewReader([]byte(text)),
 		Metadata: &backend.ResponseMetadata{
-			Backend:     b.Name(),
+			Provider:    b.Provider(),
 			Model:       req.ModelPath,
 			Timestamp:   time.Now(),
 			OutputBytes: int64(len(text)),

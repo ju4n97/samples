@@ -28,9 +28,9 @@ func NewBackend(binPath string) (*Backend, error) {
 	}, nil
 }
 
-// Name creates a new Llama backend.
-func (b *Backend) Name() string {
-	return "llama"
+// Provider returns the backend provider.
+func (b *Backend) Provider() backend.BackendProvider {
+	return backend.BackendProviderLlamaCPP
 }
 
 // Infer executes synchronous inference.
@@ -54,7 +54,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	return &backend.Response{
 		Output: bytes.NewReader([]byte(text)),
 		Metadata: &backend.ResponseMetadata{
-			Backend:     b.Name(),
+			Provider:    b.Provider(),
 			Model:       req.ModelPath,
 			Timestamp:   time.Now(),
 			OutputBytes: int64(len(text)),
@@ -88,6 +88,11 @@ func (b *Backend) buildArgs(req *backend.Request) []string {
 	p := req.Parameters
 	if p == nil {
 		p = make(map[string]any)
+	}
+
+	// System prompt
+	if v, ok := p["system_prompt"].(string); ok {
+		args = append(args, "--system-prompt", v)
 	}
 
 	// Context size
@@ -137,7 +142,7 @@ func (b *Backend) buildArgs(req *backend.Request) []string {
 	args = append(args, "--no-warmup")
 	args = append(args, "--no-display-prompt")
 	args = append(args, "--simple-io")
-	args = append(args, "-no-cnv")
+	args = append(args, "--no-conversation")
 
 	return args
 }

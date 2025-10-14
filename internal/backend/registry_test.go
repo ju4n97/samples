@@ -16,9 +16,9 @@ type MockBackend struct {
 	name string
 }
 
-func (m *MockBackend) Name() string {
+func (m *MockBackend) Provider() BackendProvider {
 	args := m.Called()
-	return args.String(0)
+	return BackendProvider(args.String(0))
 }
 
 func (m *MockBackend) Infer(ctx context.Context, req *Request) (*Response, error) {
@@ -51,7 +51,7 @@ func (m *MockStreamingBackend) InferStream(ctx context.Context, req *Request) (<
 func TestRegistry_RegisterAndGet(t *testing.T) {
 	reg := NewRegistry()
 	mockBackend := new(MockBackend)
-	mockBackend.On("Name").Return("test-backend")
+	mockBackend.On("Provider").Return("test-backend")
 
 	reg.Register(mockBackend)
 
@@ -71,7 +71,7 @@ func TestRegistry_GetStreaming(t *testing.T) {
 
 	// Non-streaming backend
 	mockBackend := new(MockBackend)
-	mockBackend.On("Name").Return("basic")
+	mockBackend.On("Provider").Return("basic")
 	reg.Register(mockBackend)
 
 	sb, ok := reg.GetStreaming("basic")
@@ -80,7 +80,7 @@ func TestRegistry_GetStreaming(t *testing.T) {
 
 	// Streaming backend
 	mockStream := new(MockStreamingBackend)
-	mockStream.On("Name").Return("streamer")
+	mockStream.On("Provider").Return("streamer")
 	reg.Register(mockStream)
 
 	sb, ok = reg.GetStreaming("streamer")
@@ -96,8 +96,8 @@ func TestRegistry_Close(t *testing.T) {
 
 	b1 := new(MockBackend)
 	b2 := new(MockBackend)
-	b1.On("Name").Return("b1")
-	b2.On("Name").Return("b2")
+	b1.On("Provider").Return("b1")
+	b2.On("Provider").Return("b2")
 
 	// Normal close
 	b1.On("Close").Return(nil).Once()
@@ -119,8 +119,8 @@ func TestRegistry_CloseErrorPropagation(t *testing.T) {
 	b1 := new(MockBackend)
 	b2 := new(MockBackend)
 
-	b1.On("Name").Return("b1")
-	b2.On("Name").Return("b2")
+	b1.On("Provider").Return("b1")
+	b2.On("Provider").Return("b2")
 
 	b1.On("Close").Return(errors.New("close failed")).Once()
 	b2.On("Close").Return(nil).Maybe()

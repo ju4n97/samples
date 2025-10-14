@@ -6,10 +6,19 @@ import (
 	"time"
 )
 
+// BackendProvider is a string identifier for a backend provider.
+type BackendProvider string
+
+const (
+	BackendProviderLlamaCPP   BackendProvider = "llama.cpp"
+	BackendProviderPiper      BackendProvider = "piper"
+	BackendProviderWhisperCPP BackendProvider = "whisper.cpp"
+)
+
 // Backend defines the core interface for all inference backends.
 type Backend interface {
 	// Name returns the backend identifier.
-	Name() string
+	Provider() BackendProvider
 
 	// Infer executes inference and returns complete result.
 	Infer(ctx context.Context, req *Request) (*Response, error)
@@ -49,11 +58,11 @@ type Response struct {
 
 // ResponseMetadata contains metadata about the response.
 type ResponseMetadata struct {
-	Backend         string         `json:"backend"`
-	Model           string         `json:"model"`
-	Timestamp       time.Time      `json:"timestamp"`
-	OutputBytes     int64          `json:"output_bytes"`
-	BackendSpecific map[string]any `json:"backend_specific"`
+	Provider        BackendProvider `json:"provider"`
+	Model           string          `json:"model"`
+	Timestamp       time.Time       `json:"timestamp"`
+	OutputBytes     int64           `json:"output_bytes"`
+	BackendSpecific map[string]any  `json:"backend_specific"`
 }
 
 // StreamChunk represents a single chunk in a streaming response.

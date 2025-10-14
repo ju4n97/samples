@@ -168,9 +168,9 @@ services:
   llm:
     models:
       - llama-cpp-qwen2.5-1.5b-instruct-q4_k_m
-      # - llama-cpp-qwen2.5-1.5b-instruct-q5_k_m
-      # - llama-cpp-phi-3.5-mini-instruct-q4_k_m
-      # - llama-cpp-tinyllama-1.1b-chat-v1.0
+      - llama-cpp-qwen2.5-1.5b-instruct-q5_k_m
+      - llama-cpp-phi-3.5-mini-instruct-q4_k_m
+      - llama-cpp-tinyllama-1.1b-chat-v1.0
 
   stt:
     models:
