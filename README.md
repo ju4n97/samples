@@ -1,76 +1,68 @@
+[![Go](https://img.shields.io/badge/Go-1.25%2B-000000?logo=go&logoColor=white&style=flat&color=000000)](https://go.dev)
+[![Docker](https://img.shields.io/badge/Docker-000000?logo=docker&logoColor=white&style=flat&color=000000)](https://ghcr.io/ekisa-team/syn4pse)
+
 # SYN4PSE
 
-**SYN4PSE** es infraestructura descentralizada para la ejecución y orquestación de modelos locales de inteligencia artificial.
-Actúa como una malla distribuida de inteligencia sintética, donde cada nodo es una instancia capaz de cargar, ejecutar y coordinar modelos LLM, STT, TTS, Visión y Embeddings dentro de un entorno de servicios.
+SYN4PSE es una infraestructura local diseñada para ejecutar múltiples tipos de modelos de inteligencia artificial (LLM, STT, TTS, visión y embeddings) a través de una API unificada.  
+Funciona como un servidor autónomo que integra distintos motores de inferencia optimizados, permitiendo a aplicaciones y agentes interactuar con modelos locales sin depender de servicios externos ni nubes centralizadas.
 
 ## Concepto central
 
-SYN4PSE abstrae la orquestación de modelos y la comunicación entre nodos mediante una API unificada, eliminando la dependencia de servicios externos o nubes centralizadas.
+El objetivo de SYN4PSE es simplificar el acceso local a modelos de IA de manera consistente mediante una interfaz común (HTTP y gRPC).  
+Todo el procesamiento ocurre en el mismo servidor donde se ejecuta SYN4PSE, garantizando privacidad, baja latencia y control total sobre los recursos.
 
-- Carga y descarga dinámica de modelos locales.
-- API de inferencia unificada para múltiples modalidades.
-- Inferencia por lotes o streaming continuo.
-- Gestión descentralizada del ciclo de vida de los modelos.
+### Características principales
+
+- Descarga y carga bajo demanda desde repositorios como Hugging Face.
+- Interfaz consistente para LLM, STT, TTS, embeddings y visión.
+- Soporte para procesamiento por lotes y streaming.
+- Sin dependencia de infraestructura remota ni coordinación entre nodos.
 
 ## Arquitectura (desde octubre de 2025)
 
 ```mermaid
 flowchart TD
-    subgraph CLIENTS[Interfaces Externas / Clientes]
+    subgraph CLIENTS[Interfaces externas / Clientes]
         A1[CLI / SDK / API]
-        A2[Aplicaciones Externas]
-        A3[Agentes o Servicios de Terceros]
+        A2[Aplicaciones externas]
+        A3[Agentes o servicios de terceros]
     end
 
     subgraph NODE[Nodo SYN4PSE]
         direction TB
 
-        subgraph CONTROL[Capa de Control]
-            B1[Registry / Descubrimiento / Estado]
-            B2[Orquestador / API gRPC]
+        subgraph CONTROL[Capa de control]
+            B1[Registro de modelos / Estado]
+            B2[Servidor de gRPC y HTTP]
         end
 
-        subgraph BACKENDS[Backends de Inferencia]
+        subgraph BACKENDS[Backends de inferencia]
             C1[LLM: Llama, Mistral, etc.]
             C2[STT: Whisper, Vosk, etc.]
-            C3[TTS: Kokoro, Coqui, etc.]
+            C3[TTS: Kokoro, Piper, etc.]
             C4[Embeddings]
             C5[Visión]
         end
 
-        subgraph PB[gRPC / Protocol Buffers]
-            D1[Servidor gRPC]
-            D2[Clientes gRPC entre nodos]
-        end
-
-        subgraph STORAGE[Almacenamiento y Configuración]
-            E1[Cache de Modelos]
+        subgraph STORAGE[Almacenamiento y configuración]
+            E1[Cache de modelos]
             E2[Metadata / Config]
         end
     end
 
-    subgraph NETWORK[Red SYN4PSE / Malla P2P]
-        F1[Discovery / Gossip]
-        F2[Otros Nodos SYN4PSE]
-        F3[Balanceo Inteligente]
-    end
-
-    A1 -->|Inferencia / Gestión| D1
-    A2 -->|Streaming / Batch| D1
-    A3 -->|Control remoto| D1
-    D1 --> B2
+    A1 -->|Inferencia / Gestión| B2
+    A2 -->|Streaming / Batch| B2
+    A3 -->|Control local| B2
     B2 --> B1
     B2 --> BACKENDS
     BACKENDS --> B2
     B1 --> STORAGE
-    D2 --> NETWORK
-    F2 --> D2
-    D1 --> F2
 ```
 
 ## Backends de inferencia
 
-SYN4PSE delega la inferencia a motores optimizados en C/C++, como [llama.cpp](https://github.com/ggml-org/llama.cpp) y [whisper.cpp](https://github.com/ggerganov/whisper.cpp). Estos se compilan como binarios independientes para distintas plataformas de ejecución (CPU, CUDA, Vulkan, Metal) mediante [CMake](https://cmake.org/) y se exponen a través de SYN4PSE server (HTTP y gRPC).
+SYN4PSE delega la inferencia a motores optimizados en C/C++, como [llama.cpp](https://github.com/ggml-org/llama.cpp) y [whisper.cpp](https://github.com/ggerganov/whisper.cpp).  
+Estos se compilan como binarios independientes para distintas plataformas (CPU, CUDA, Vulkan, Metal) mediante [CMake](https://cmake.org/) y se invocan localmente desde SYN4PSE server mediante HTTP o gRPC, y en tiempo real a través de WebRTC para flujos continuos de audio o texto.
 
 ### Compilación de backends
 
@@ -88,23 +80,97 @@ task build-third-party-vulkan
 task build-third-party-metal
 ```
 
-Puede contribuir a este proyecto añadiendo soporte para nuevos backends de inferencia. Consulte la guía en <https://syn4pse.pages.dev/backends/quickstart>
-
 ## Backends soportados
 
-| **Tipo** | **Backend**                                             | **Repositorio**                              | **Estado**       | **Aceleración soportada** |
-| -------- | ------------------------------------------------------- | -------------------------------------------- | ---------------- | ------------------------- |
-| **LLM**  | [llama.cpp](https://github.com/ggml-org/llama.cpp)      | [backends/llama-cpp](backends/llama-cpp)     | 🟡 En desarrollo | CPU, CUDA 11/12           |
-| **STT**  | [whisper.cpp](https://github.com/ggerganov/whisper.cpp) | [backends/whisper-cpp](backends/whisper-cpp) | 🟡 En desarrollo | CPU, CUDA 12              |
-| **TTS**  | [Piper](https://github.com/OHF-Voice/piper1-gpl)        | [backends/piper](backends/piper)             | 🟡 En desarrollo | CPU                       |
+### LLM
+
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)**
+  - Fuente: [`internal/backend/llama`](internal/backend/llama)
+  - Aceleración: CPU, CUDA 11/12
+  - Licencia: MIT
+  - Estado: 🟡 Inestable
+
+- **[vLLM](https://github.com/vllm-project/vllm)**
+  - Aceleración: —
+  - Licencia: Apache 2.0
+  - Estado: 🔴 Planeado
+
+---
+
+### STT
+
+- **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**
+  - Fuente: [`internal/backend/whisper`](internal/backend/whisper)
+  - Aceleración: CPU, CUDA 12
+  - Licencia: MIT
+  - Estado: 🟡 Inestable
+
+- **[Vosk](https://github.com/alphacep/vosk-api)**
+  - Licencia: Apache 2.0
+  - Estado: 🔴 Planeado
+
+---
+
+### VAD
+
+- **[Silero VAD](https://github.com/snakers4/silero-vad)**
+  - Licencia: MIT
+  - Estado: 🔴 Planeado
+
+---
+
+### TTS
+
+- **[Piper](https://github.com/rhasspy/piper)**
+  - Fuente: [`internal/backend/piper`](internal/backend/piper)
+  - Aceleración: CPU
+  - Licencia: MIT
+  - Estado: 🟡 Inestable
+
+- **[Coqui TTS](https://github.com/coqui-ai/TTS)**
+  - Licencia: MPL 2.0
+  - Estado: 🔴 Planeado
+
+---
+
+### Visión
+
+- **[ONNX Runtime + OpenCV](https://github.com/microsoft/onnxruntime)**
+  - Licencia: MIT
+  - Estado: 🔴 Planeado
+
+- **[Ultralytics YOLO](https://github.com/ultralytics/ultralytics)**
+  - Licencia: AGPL-3.0
+  - Estado: 🔴 Planeado
+
+---
+
+### Embeddings
+
+- **[sentence-transformers](https://github.com/UKPLab/sentence-transformers)**
+  - Licencia: Apache 2.0
+  - Estado: 🔴 Planeado
+
+- **[nomic-embed-text](https://github.com/nomic-ai/nomic)**
+  - Licencia: Apache 2.0
+  - Estado: 🔴 Planeado
+
+---
+
+**Leyenda de estado:**
+
+- 🟢 Estable: probado y listo para producción.
+- 🟡 Inestable: funcional, pero con errores, incompleto o rendimiento variable.
+- 🟠 Desarrollo: integración activa, aún incompleta.
+- 🔴 Planeado: integración futura (PRs bienvenidos).
+
+Puede contribuir a este proyecto recomendando o agregando soporte para nuevos backends. Consulte la guía en: <https://syn4pse.pages.dev/backends/quickstart>
 
 ## Instalación
 
-Las imágenes oficiales de SYN4PSE están disponibles en <https://ghcr.io/ekisa-team/syn4pse>
+Las imágenes oficiales de SYN4PSE están disponibles en: <https://ghcr.io/ekisa-team/syn4pse>
 
-### CPU
-
-Versión más liviana. Compatible con cualquier sistema.
+### CPU (compatible con cualquier sistema)
 
 ```bash
 docker run -p 8080:8080 -p 50051:50051 ghcr.io/ekisa-team/syn4pse:latest
@@ -112,7 +178,7 @@ docker run -p 8080:8080 -p 50051:50051 ghcr.io/ekisa-team/syn4pse:latest
 
 ### NVIDIA GPU
 
-Requiere [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+Requiere el [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ```bash
 # CUDA 12.x (RTX 3000+, A100, H100, L40) y CUDA 11.8 (RTX 2000, V100, T4)
@@ -124,7 +190,7 @@ docker run -p 8080:8080 -p 50051:50051 --runtime nvidia ghcr.io/ekisa-team/syn4p
 
 ### Vulkan GPU
 
-Para GPUs con soporte Vulkan (AMD, Intel o NVIDIA sin CUDA).
+Para GPUs con soporte Vulkan (AMD, Intel o NVIDIA sin CUDA):
 
 ```bash
 docker run -p 8080:8080 -p 50051:50051 --device /dev/dri ghcr.io/ekisa-team/syn4pse:vulkan
@@ -132,64 +198,76 @@ docker run -p 8080:8080 -p 50051:50051 --device /dev/dri ghcr.io/ekisa-team/syn4
 
 ## Configuración
 
-SYN4PSE utiliza un único archivo `syn4pse.toml` para definir los parámetros del servidor y los backends disponibles.
+SYN4PSE utiliza un archivo `syn4pse.yaml` para definir qué modelos descargar y qué servicios exponer.
 
-```toml
-[server]
-host = "0.0.0.0"
-http_port = 8080
-grpc_port = 50051
+```yaml
+# syn4pse.yaml
+version: "1"
 
-[backends.llm.llama_cpp]
-enabled = true
-engine = "ng_llama_cpp"
-model = "models/llama-3-8b.Q4_K_M.gguf"
+models:
+    llama-cpp-qwen2.5-1.5b-instruct:
+        type: llm
+        backend: llama.cpp
+        source:
+            huggingface:
+                repo: Qwen/Qwen2.5-1.5B-Instruct-GGUF
+                include: ["qwen2.5-1.5b-instruct-q4_k_m.gguf"]
 
-[backends.stt.faster_whisper]
-enabled = true
-engine = "ng_faster_whisper"
-model = "models/whisper-large-v3"
+    whisper-cpp-small:
+        type: stt
+        backend: whisper.cpp
+        source:
+            huggingface:
+                repo: ggerganov/whisper.cpp
+                include: ["ggml-small.bin"]
+        tags: [multilingual, streaming]
 
-[backends.tts.kokoro]
-enabled = true
-engine = "ng_kokoro"
-model = "models/kokoro-1.3b"
+    piper-es-ar-daniela:
+        type: tts
+        backend: piper
+        source:
+            huggingface:
+                repo: rhasspy/piper-voices
+                include: ["es/es_AR/daniela/high/*"]
+        tags: [spanish, argentina, high-quality]
 
-[backends.tts.piper]
-enabled = true
-engine = "ng_piper"
-model = "models/piper-1.3b"
+services:
+    llm:
+        models: [llama-cpp-qwen2.5-1.5b-instruct]
+    stt:
+        models: [whisper-cpp-small]
+    tts:
+        models: [piper-es-ar-daniela]
 ```
 
 ### Variables de entorno
 
-SYN4PSE expone algunas variables de entorno para configurar el servidor.
+| Variable de entorno        | Descripción                                       |
+| -------------------------- | ------------------------------------------------- |
+| `SYN4PSE_ENV`              | Entorno de ejecución (`dev`, `prod`, etc.)        |
+| `SYN4PSE_SERVER_HTTP_PORT` | Puerto HTTP del servidor                          |
+| `SYN4PSE_SERVER_GRPC_PORT` | Puerto gRPC del servidor                          |
+| `SYN4PSE_MODELS_PATH`      | Ruta donde se almacenan los modelos               |
+| `SYN4PSE_CONFIG_PATH`      | Ruta al archivo de configuración (`syn4pse.yaml`) |
 
-| Clave TOML         | Variable de entorno equivalente |
-| ------------------ | ------------------------------- |
-| `server.host`      | `SYN4PSE_SERVER_HOST`           |
-| `server.http_port` | `SYN4PSE_SERVER_HTTP_PORT`      |
-| `server.grpc_port` | `SYN4PSE_SERVER_GRPC_PORT`      |
+### Uso en Docker
 
-### Configuración en Docker
+Montar archivo de configuración:
 
-- Montar `syn4pse.toml` en un volumen.
+```bash
+docker run -p 8080:8080 -p 50051:50051 \
+    -v ./syn4pse.yaml:/app/syn4pse.yaml \
+    ghcr.io/ekisa-team/syn4pse:latest
+```
 
-  ```bash
-  docker run -p 8080:8080 -p 50051:50051 \
-      -v ./syn4pse.toml:/app/syn4pse.toml \
-      ghcr.io/ekisa-team/syn4pse:latest
-  ```
+Configurar vía variables de entorno:
 
-- Sobrescribir configuración por medio de variables de entorno.
-
-  ```bash
-  docker run -p 8080:8080 -p 50051:50051 \
-      -e SYN4PSE_SERVER_HOST=0.0.0.0 \
-      -e SYN4PSE_SERVER_HTTP_PORT=5000 \
-      -e SYN4PSE_SERVER_GRPC_PORT=50052 \
-      ghcr.io/ekisa-team/syn4pse:cuda
-  ```
+```bash
+docker run -p 8080:8080 -p 50051:50051 \
+    -e SYN4PSE_MODELS_PATH=/data/models \
+    -e SYN4PSE_CONFIG_PATH=/app/syn4pse.yaml \
+    ghcr.io/ekisa-team/syn4pse:cuda
+```
 
 ## Desarrollo
 
@@ -199,22 +277,26 @@ SYN4PSE expone algunas variables de entorno para configurar el servidor.
 - [CMake v3.22+](https://cmake.org)
 - [Docker](https://www.docker.com)
 - [Task](https://taskfile.dev)
-- [Protocol Buffers Compiler (`protoc`)](https://github.com/protocolbuffers/protobuf#protobuf-compiler-installation)
+- [protoc](https://github.com/protocolbuffers/protobuf)
 
 ```bash
 git clone --recursive https://github.com/ekisa-team/syn4pse.git
 cd syn4pse
-task install                # instalar dependencias
-task build-third-party      # compilar dependencias externas
-task build-third-party-cuda # compilar dependencias externas con soporte CUDA
-task help                   # listar tareas disponibles
+
+task install
+# Compilar backends (esto puede tomar varios minutos)
+task build-third-party          # CPU
+# task build-third-party-cuda   # CUDA
+# task build-third-party-vulkan # Vulkan
+# task build-third-party-metal  # Metal
+task help
 ```
 
 [Taskfile.yaml](./Taskfile.yaml) es su guía de referencia.
 
 ## Licencia
 
-Este proyecto es propietario. Consultar los términos completos en [LICENSE](./LICENSE).
+Este proyecto es propietario. Consulte los términos completos en [LICENSE](./LICENSE).
 
 ---
 

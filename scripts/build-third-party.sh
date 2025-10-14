@@ -37,7 +37,7 @@ fi
 
 mkdir -p "$WHISPER_BUILD"
 cd "$WHISPER_BUILD"
-cmake .. -DWHISPER_BUILD_CLI=ON -DWHISPER_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
+cmake .. -DWHISPER_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build . --target whisper-cli -j"$(nproc)"
 cp bin/whisper-cli "$BIN_DIR/whisper-cli-cpu"
 
