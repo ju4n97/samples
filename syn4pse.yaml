@@ -110,9 +110,7 @@ models:
     source:
       huggingface:
         repo: rhasspy/piper-voices
-        include:
-          - "es/es_MX/ald/medium/es_MX-ald-medium.onnx"
-          - "es/es_MX/ald/medium/es_MX-ald-medium.onnx.json"
+        include: ["es/es_MX/ald/medium/*"]
     tags: [spanish, mexico, neutral, medium-quality]
     order: 10
 
@@ -122,9 +120,7 @@ models:
     source:
       huggingface:
         repo: rhasspy/piper-voices
-        include:
-          - "es/es_MX/claude/high/es_MX-claude-high.onnx"
-          - "es/es_MX/claude/high/es_MX-claude-high.onnx.json"
+        include: ["es/es_MX/claude/high/*"]
     tags: [spanish, mexico, expressive, high-quality]
     order: 20
 
@@ -134,9 +130,7 @@ models:
     source:
       huggingface:
         repo: rhasspy/piper-voices
-        include:
-          - "es/es_AR/daniela/high/es_AR-daniela-high.onnx"
-          - "es/es_AR/daniela/high/es_AR-daniela-high.onnx.json"
+        include: ["es/es_AR/daniela/high/*"]
     tags: [spanish, argentina, high-quality]
     order: 30
 
@@ -146,9 +140,7 @@ models:
     source:
       huggingface:
         repo: rhasspy/piper-voices
-        include:
-          - "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx"
-          - "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx.json"
+        include: ["es/es_ES/carlfm/x_low/*"]
     tags: [spanish, spain, fast, low-quality]
     order: 40
 
@@ -158,9 +150,7 @@ models:
     source:
       huggingface:
         repo: rhasspy/piper-voices
-        include:
-          - "en/en_US/amy/low/en_US-amy-low.onnx"
-          - "en/en_US/amy/low/en_US-amy-low.onnx.json"
+        include: ["en/en_US/amy/low/*"]
     tags: [english, us, fast]
     order: 50
 
@@ -170,9 +160,7 @@ models:
     source:
       huggingface:
         repo: rhasspy/piper-voices
-        include:
-          - "en/en_US/lessac/high/en_US-lessac-high.onnx"
-          - "en/en_US/lessac/high/en_US-lessac-high.onnx.json"
+        include: ["en/en_US/lessac/high/*"]
     tags: [english, us, broadcast-quality, high-quality]
     order: 60
 
@@ -180,14 +168,14 @@ services:
   llm:
     models:
       - llama-cpp-qwen2.5-1.5b-instruct-q4_k_m
-      - llama-cpp-qwen2.5-1.5b-instruct-q5_k_m
-      - llama-cpp-phi-3.5-mini-instruct-q4_k_m
-      - llama-cpp-tinyllama-1.1b-chat-v1.0
+      # - llama-cpp-qwen2.5-1.5b-instruct-q5_k_m
+      # - llama-cpp-phi-3.5-mini-instruct-q4_k_m
+      # - llama-cpp-tinyllama-1.1b-chat-v1.0
 
   stt:
     models:
       - whisper-cpp-tiny
-      - whisper-cpp-base
+      # - whisper-cpp-base
       # - whisper-cpp-small
       # - whisper-cpp-medium
       # - whisper-cpp-large-v2
@@ -195,8 +183,8 @@ services:
 
   tts:
     models:
-      - piper-es-mx-ald-medium
-      - piper-es-mx-claude-high
+      # - piper-es-mx-ald-medium
+      # - piper-es-mx-claude-high
       - piper-es-ar-daniela-high
-      - piper-en-us-amy-low
-      - piper-en-us-lessac-high
+      # - piper-en-us-amy-low
+      # - piper-en-us-lessac-high

@@ -21,7 +21,7 @@ fi
 
 mkdir -p "$LLAMA_BUILD"
 cd "$LLAMA_BUILD"
-cmake .. -DLLAMA_BUILD_CLI=ON -DLLAMA_CUDA=ON -DCMAKE_BUILD_TYPE=Release
+cmake .. -DLLAMA_CUDA=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build . --target llama-cli -j"$(nproc)"
 cp bin/llama-cli "$BIN_DIR/llama-cli-cuda"
 

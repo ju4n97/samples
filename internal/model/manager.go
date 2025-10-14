@@ -76,17 +76,17 @@ func (m *Manager) LoadModelsFromConfig(ctx context.Context, config *config.Confi
 			return fmt.Errorf("failed to get downloader for %s: %w", modelID, err)
 		}
 
-		modelPath, _, err := downloader.Download(ctx, &modelConfig, modelsPath)
+		downloadPath, _, err := downloader.Download(ctx, &modelConfig, modelsPath)
 		if err != nil {
 			return fmt.Errorf("failed to download model %s into %s: %w", modelID, modelsPath, err)
 		}
 
-		instance := NewModelInstance(&modelConfig, modelID, modelPath)
+		instance := NewModelInstance(&modelConfig, modelID, downloadPath)
 		loadedKeys[modelID] = true
 		m.registry.Set(instance)
 		instance.SetStatus(ModelStatusUnloaded)
 
-		slog.Info("Model loaded into registry", "model_id", modelID, "model_path", modelPath)
+		slog.Info("Model loaded into registry", "model_id", modelID, "download_path", downloadPath)
 	}
 
 	// Delete unloaded models from the registry (if any)

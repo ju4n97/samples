@@ -1,0 +1,22 @@
+assert_lefthook_installed: true
+
+pre-commit:
+  parallel: true
+
+  jobs:
+    - name: lint
+      group:
+        jobs:
+          - run: task lint
+            stage_fixed: true
+
+    - name: format
+      group:
+        jobs:
+          - run: task fmt
+            stage_fixed: true
+
+    - name: test
+      group:
+        jobs:
+          - run: task test

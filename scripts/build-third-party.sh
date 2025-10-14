@@ -21,7 +21,7 @@ fi
 
 mkdir -p "$LLAMA_BUILD"
 cd "$LLAMA_BUILD"
-cmake .. -DLLAMA_BUILD_CLI=ON -DLLAMA_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
+cmake .. -DLLAMA_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build . --target llama-cli -j"$(nproc)"
 cp bin/llama-cli "$BIN_DIR/llama-cli-cpu"
 
@@ -46,6 +46,8 @@ echo "Downloading piper (CPU)..."
 PIPER_URL="https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz"
 mkdir -p /tmp/piper-download
 curl -L "$PIPER_URL" | tar -xz -C /tmp/piper-download
+rm -rf "$BIN_DIR/piper-cpu"
+mkdir -p "$BIN_DIR"
 cp -r /tmp/piper-download/piper "$BIN_DIR/piper-cpu"
 chmod +x "$BIN_DIR/piper-cpu"
 
