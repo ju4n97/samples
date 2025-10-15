@@ -1,6 +1,6 @@
 module github.com/ekisa-team/syn4pse
 
-go 1.25.2
+go 1.25.3
 
 require (
 	github.com/danielgtaylor/huma/v2 v2.34.1
