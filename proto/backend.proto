@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package inference.v1;
+
+option go_package = "internal/pb/inference/v1;inferencev1";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// Request for inference
+message InferenceRequest {
+  string provider = 1;
+  string model_id = 2; // Logical model ID, e.g. "llama2-7b"
+  bytes input = 3;     // Raw input (text, audio, image, etc.)
+  map<string, google.protobuf.Value> parameters = 4;
+}
+
+// Response for synchronous inference
+message InferenceResponse {
+  bytes output = 1;               // Raw output (text, audio, image, etc.)
+  InferenceMetadata metadata = 2; // Metadata describing inference results
+}
+
+// Streaming response chunk
+message StreamChunk {
+  bytes data = 1;                 // Partial output (UTF-8 text or bytes)
+  bool done = 2;                  // Indicates last chunk
+  string error = 3;               // Optional error message
+  InferenceMetadata metadata = 4; // Optional metadata
+}
+
+// Metadata describing inference results
+message InferenceMetadata {
+  string provider = 1;
+  string model = 2;                         // Model file path or ID
+  google.protobuf.Timestamp timestamp = 3;  // Time of inference
+  int64 output_bytes = 4;                   // Size of output
+  map<string, string> backend_specific = 5; // Any backend-provided diagnostics
+}
+
+// Unified inference service
+service InferenceService {
+  // Single-response inference (maps to Backend.Infer)
+  rpc Infer(InferenceRequest) returns (InferenceResponse);
+
+  // Streaming inference (maps to StreamingBackend.InferStream)
+  rpc InferStream(stream InferenceRequest) returns (stream StreamChunk);
+}

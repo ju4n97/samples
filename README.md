@@ -1,9 +1,40 @@
-[![Go](https://img.shields.io/badge/Go-1.25%2B-000000?logo=go&logoColor=white&style=flat&color=000000)](https://go.dev)
-[![Docker](https://img.shields.io/badge/Docker-000000?logo=docker&logoColor=white&style=flat&color=000000)](https://ghcr.io/ekisa-team/syn4pse)
+<div align="center">
+<pre>
+███████╗██╗   ██╗███╗   ██╗██╗  ██╗██████╗ ███████╗███████╗
+██╔════╝╚██╗ ██╔╝████╗  ██║██║  ██║██╔══██╗██╔════╝██╔════╝
+███████╗ ╚████╔╝ ██╔██╗ ██║███████║██████╔╝███████╗█████╗  
+╚════██║  ╚██╔╝  ██║╚██╗██║╚════██║██╔═══╝ ╚════██║██╔══╝  
+███████║   ██║   ██║ ╚████║     ██║██║     ███████║███████╗
+╚══════╝   ╚═╝   ╚═╝  ╚═══╝     ╚═╝╚═╝     ╚══════╝╚══════╝
+</pre>
+</div>
+
+<br>
+
+<div align="center">
+<a href="https://go.dev" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Go-1.25%2B-000000?logo=go&logoColor=white&style=flat&color=000000" alt="Go" /></a>
+<a href="https://www.docker.com" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Docker-000000?logo=docker&logoColor=white&style=flat&color=000000" alt="Docker" /></a>
+
+<br>
+<br>
+
+<table>
+   <tbody>
+      <tr>
+         <td>
+            <a href="https://syn4pse.pages.dev">📚 Documentación</a>
+         </td>
+         <td>
+            <a href="https://github.com/ekisa-team/kivox">🤖 KIVOX</a>
+         </td>
+      </tr>
+   </tbody>
+</table>
+</div>
 
 # SYN4PSE
 
-SYN4PSE es una infraestructura local diseñada para ejecutar múltiples tipos de modelos de inteligencia artificial (LLM, STT, TTS, visión y embeddings) a través de una API unificada.  
+SYN4PSE es infraestructura local descentralizada para la ejecución de múltiples tipos de modelos de inteligencia artificial (LLM, STT, TTS, visión y embeddings) a través de una API unificada.  
 Funciona como un servidor autónomo que integra distintos motores de inferencia optimizados, permitiendo a aplicaciones y agentes interactuar con modelos locales sin depender de servicios externos ni nubes centralizadas.
 
 ## Concepto central
@@ -11,12 +42,23 @@ Funciona como un servidor autónomo que integra distintos motores de inferencia 
 El objetivo de SYN4PSE es simplificar el acceso local a modelos de IA de manera consistente mediante una interfaz común (HTTP y gRPC).  
 Todo el procesamiento ocurre en el mismo servidor donde se ejecuta SYN4PSE, garantizando privacidad, baja latencia y control total sobre los recursos.
 
-### Características principales
+### Características
 
 - Descarga y carga bajo demanda desde repositorios como Hugging Face.
 - Interfaz consistente para LLM, STT, TTS, embeddings y visión.
 - Soporte para procesamiento por lotes y streaming.
 - Sin dependencia de infraestructura remota ni coordinación entre nodos.
+
+## Ecosistema
+
+SYN4PSE es la capa de infraestructura sobre la que se construyen sistemas de IA locales más complejos.
+El primer proyecto basado en SYN4PSE es [KIVOX](https://github.com/ekisa-team/kivox): una plataforma para crear agentes conversacionales congnitivos que integran voz, texto y visión.
+
+```mermaid
+flowchart LR
+    A[SYN4PSE<br>Infraestructura de modelos] --> B[KIVOX<br>Agentes conversacionales]
+    B --> C[Aplicaciones y experiencias de usuario]
+```
 
 ## Arquitectura (desde octubre de 2025)
 

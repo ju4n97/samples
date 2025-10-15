@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +23,8 @@ import (
 	"github.com/ekisa-team/syn4pse/internal/env"
 	"github.com/ekisa-team/syn4pse/internal/logger"
 	"github.com/ekisa-team/syn4pse/internal/model"
+	inferencev1 "github.com/ekisa-team/syn4pse/internal/pb/inference/v1"
+	syn4pse_grpc "github.com/ekisa-team/syn4pse/internal/server/grpc"
 	syn4pse_http "github.com/ekisa-team/syn4pse/internal/server/http"
 	"github.com/ekisa-team/syn4pse/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -29,6 +32,8 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httplog/v3"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -36,7 +41,7 @@ func main() {
 
 	var (
 		flagHTTPPort   = flag.Int("http-port", config.DefaultHTTPPort(), "HTTP port to listen on")
-		_              = flag.Int("grpc-port", config.DefaultGRPCPort(), "GRPC port to listen on")
+		flagGRPCPort   = flag.Int("grpc-port", config.DefaultGRPCPort(), "gRPC port to listen on")
 		flagConfigPath = flag.String("config", path.Join(config.DefaultConfigPath(), "config.yaml"), "Path to config file")
 		flagSchemaPath = flag.String("schema", path.Join(config.DefaultConfigPath(), "syn4pse.v1.schema.json"), "Path to schema file")
 	)
@@ -80,6 +85,41 @@ func main() {
 	backends := backend.NewRegistry()
 	defer backends.Close()
 
+	registerBackends(backends)
+
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Build servers
+	httpServer := buildHTTPServer(*flagHTTPPort, backends, manager.Registry())
+	grpcServer := buildGRPCServer(backends, manager.Registry())
+
+	// Start HTTP server
+	g.Go(func() error {
+		slog.Info("Starting HTTP server", "port", *flagHTTPPort)
+		return runHTTPServer(ctx, httpServer)
+	})
+
+	// Start gRPC server
+	g.Go(func() error {
+		slog.Info("Starting gRPC server", "port", *flagGRPCPort)
+		return runGRPCServer(ctx, grpcServer, *flagGRPCPort)
+	})
+
+	if err := g.Wait(); err != nil {
+		slog.Error("Error running servers", "error", err)
+	}
+
+	slog.Info("Shutting down...")
+}
+
+// registerBackends registers the backends in the registry.
+func registerBackends(backends *backend.Registry) {
 	backendLlama, err := llama.NewBackend("./bin/llama-cli-cuda")
 	if err != nil {
 		slog.Error("Failed to create Llama backend", "error", err)
@@ -100,26 +140,6 @@ func main() {
 		return
 	}
 	backends.Register(backendPiper)
-
-	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	g, ctx := errgroup.WithContext(ctx)
-	httpServer := buildHTTPServer(*flagHTTPPort, backends, manager.Registry())
-
-	g.Go(func() error {
-		slog.Info("Starting HTTP server", "port", *flagHTTPPort)
-		return runHTTPServer(ctx, httpServer)
-	})
-
-	if err := g.Wait(); err != nil {
-		slog.Error("Error running HTTP server", "error", err)
-	}
-
-	slog.Info("Shutting down...")
 }
 
 // runHTTPServer runs the HTTP server.
@@ -149,12 +169,41 @@ func runHTTPServer(ctx context.Context, server *http.Server) error {
 	return nil
 }
 
+// runGRPCServer runs the gRPC server.
+func runGRPCServer(ctx context.Context, server *grpc.Server, port int) error {
+	addr := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen on %s: %w", addr, err)
+	}
+
+	// Graceful shutdown
+	go func() {
+		<-ctx.Done()
+		slog.Info("Shutting down gRPC server...")
+		server.GracefulStop()
+	}()
+
+	slog.Info("Server starting",
+		"protocol", "gRPC",
+		"address", fmt.Sprintf("grpc://localhost%s", addr),
+	)
+
+	if err := server.Serve(listener); err != nil {
+		if ctx.Err() == nil {
+			return fmt.Errorf("gRPC server error: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // buildHTTPServer builds the HTTP server.
 func buildHTTPServer(port int, backends *backend.Registry, models *model.Registry) *http.Server {
 	router := buildHTTPRouter()
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("kivox-stt HTTP service is running."))
+		_, _ = w.Write([]byte("syn4pse HTTP service is running."))
 	})
 
 	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +228,28 @@ func buildHTTPServer(port int, backends *backend.Registry, models *model.Registr
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: router,
 	}
+}
+
+// buildGRPCServer builds the gRPC server.
+func buildGRPCServer(backends *backend.Registry, models *model.Registry) *grpc.Server {
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			unaryLoggingInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
+			streamLoggingInterceptor(),
+		),
+	)
+
+	inferenceServer := syn4pse_grpc.NewInferenceServer(backends, models)
+	inferencev1.RegisterInferenceServiceServer(server, inferenceServer)
+
+	// Enable reflection for development (allows using grpcurl, grpcui, etc.)
+	if env.FromEnv() == env.EnvDevelopment {
+		reflection.Register(server)
+	}
+
+	return server
 }
 
 // buildHTTPRouter builds the HTTP router.
@@ -216,4 +287,68 @@ func buildHTTPRouter() *chi.Mux {
 		middleware.Timeout(60*time.Second),
 	)
 	return router
+}
+
+// unaryLoggingInterceptor logs unary RPC calls.
+func unaryLoggingInterceptor() grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (any, error) {
+		start := time.Now()
+
+		resp, err := handler(ctx, req)
+
+		duration := time.Since(start)
+		if err != nil {
+			slog.ErrorContext(ctx, "gRPC unary call failed",
+				"method", info.FullMethod,
+				"duration", duration,
+				"error", err,
+			)
+		} else {
+			slog.InfoContext(ctx, "gRPC unary call",
+				"method", info.FullMethod,
+				"duration", duration,
+			)
+		}
+
+		return resp, err
+	}
+}
+
+// streamLoggingInterceptor logs streaming RPC calls.
+func streamLoggingInterceptor() grpc.StreamServerInterceptor {
+	return func(
+		srv any,
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		start := time.Now()
+
+		err := handler(srv, ss)
+
+		duration := time.Since(start)
+		if err != nil {
+			slog.ErrorContext(ss.Context(), "gRPC stream call failed",
+				"method", info.FullMethod,
+				"duration", duration,
+				"is_client_stream", info.IsClientStream,
+				"is_server_stream", info.IsServerStream,
+				"error", err,
+			)
+		} else {
+			slog.InfoContext(ss.Context(), "gRPC stream call",
+				"method", info.FullMethod,
+				"duration", duration,
+				"is_client_stream", info.IsClientStream,
+				"is_server_stream", info.IsServerStream,
+			)
+		}
+
+		return err
+	}
 }

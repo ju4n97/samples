@@ -72,10 +72,10 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 			Model:       req.ModelPath,
 			Timestamp:   time.Now(),
 			OutputBytes: int64(len(text)),
-			BackendSpecific: map[string]any{
+			BackendSpecific: map[string]string{
 				"stdout": string(stdout),
 				"stderr": string(stderr),
-				"args":   args,
+				"args":   strings.Join(args, " "),
 			},
 		},
 	}, nil

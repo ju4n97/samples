@@ -1,0 +1,46 @@
+name: Bug report
+description: File a bug report for the project
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A bug is unexpected application behavior that prevents a specific part of the app from working as expected.
+
+        ## Search before reporting
+
+        Before creating a new bug report, thoroughly search through existing issues. This helps prevent duplicate reports and streamlines issue tracking. Use a concise and descriptive title for your bug report, ensuring it accurately reflects the problem and would be easily discoverable through relevant search queries.
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Application version
+      description: Application version.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps & behavior
+      description: How to reproduce the issue? Include output and error messages.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Do you want to fix this bug?
+      options:
+        - "Yes"
+        - "No, just reporting."
+    validations:
+      required: true

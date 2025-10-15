@@ -58,11 +58,11 @@ type Response struct {
 
 // ResponseMetadata contains metadata about the response.
 type ResponseMetadata struct {
-	Provider        BackendProvider `json:"provider"`
-	Model           string          `json:"model"`
-	Timestamp       time.Time       `json:"timestamp"`
-	OutputBytes     int64           `json:"output_bytes"`
-	BackendSpecific map[string]any  `json:"backend_specific"`
+	Provider        BackendProvider   `json:"provider"`
+	Model           string            `json:"model"`
+	Timestamp       time.Time         `json:"timestamp"`
+	OutputBytes     int64             `json:"output_bytes"`
+	BackendSpecific map[string]string `json:"backend_specific"`
 }
 
 // StreamChunk represents a single chunk in a streaming response.
