@@ -16,9 +16,9 @@ import (
 
 type (
 	SynthesizeRequestDTO struct {
-		ModelID string         `json:"model_id" minLength:"1"`
-		Text    string         `json:"text" minLength:"1" maxLength:"4096"`
-		Params  map[string]any `json:"params,omitempty"`
+		ModelID    string         `json:"model_id" minLength:"1"`
+		Text       string         `json:"text" minLength:"1" maxLength:"4096"`
+		Parameters map[string]any `json:"parameters,omitempty"`
 	}
 )
 
@@ -58,7 +58,8 @@ func (h *TTSHandler) handleSynthesize(ctx context.Context, input *SynthesizeInpu
 		provider,
 		input.Body.ModelID,
 		&backend.Request{
-			Input: strings.NewReader(input.Body.Text),
+			Input:      strings.NewReader(input.Body.Text),
+			Parameters: input.Body.Parameters,
 		},
 	)
 	if err != nil {

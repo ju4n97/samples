@@ -16,9 +16,9 @@ import (
 
 type (
 	GenerateRequestDTO struct {
-		ModelID string         `json:"model_id" minLength:"1"`
-		Prompt  string         `json:"prompt" minLength:"1" maxLength:"4096"`
-		Params  map[string]any `json:"params,omitempty"`
+		ModelID    string         `json:"model_id" minLength:"1"`
+		Prompt     string         `json:"prompt" minLength:"1" maxLength:"4096"`
+		Parameters map[string]any `json:"parameters,omitempty"`
 	}
 
 	GenerateResponseDTO struct {
@@ -86,7 +86,7 @@ func (h *LLMHandler) handleGenerate(ctx context.Context, input *GenerateInput) (
 		input.Body.ModelID,
 		&backend.Request{
 			Input:      strings.NewReader(input.Body.Prompt),
-			Parameters: input.Body.Params,
+			Parameters: input.Body.Parameters,
 		},
 	)
 	if err != nil {
@@ -119,7 +119,7 @@ func (h *LLMHandler) handleGenerateStream(ctx context.Context, input *GenerateSt
 		input.Body.ModelID,
 		&backend.Request{
 			Input:      strings.NewReader(input.Body.Prompt),
-			Parameters: input.Body.Params,
+			Parameters: input.Body.Parameters,
 		},
 	)
 	if err != nil {
