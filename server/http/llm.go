@@ -10,6 +10,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/sse"
 	"github.com/ekisa-team/syn4pse/backend"
+	"github.com/ekisa-team/syn4pse/backend/llama"
 	"github.com/ekisa-team/syn4pse/model"
 	"github.com/ekisa-team/syn4pse/service"
 )
@@ -78,7 +79,7 @@ func NewLLMHandler(api huma.API, service *service.LLM) *LLMHandler {
 
 // handleGenerate handles the generate operation.
 func (h *LLMHandler) handleGenerate(ctx context.Context, input *GenerateInput) (*GenerateOutput, error) {
-	provider := backend.BackendProviderLlamaCPP
+	provider := llama.BackendName
 
 	resp, err := h.service.Generate(
 		ctx,
@@ -111,7 +112,7 @@ func (h *LLMHandler) handleGenerate(ctx context.Context, input *GenerateInput) (
 
 // handleGenerateStream handles the generate-stream operation.
 func (h *LLMHandler) handleGenerateStream(ctx context.Context, input *GenerateStreamInput, send sse.Sender) {
-	provider := backend.BackendProviderLlamaCPP
+	provider := llama.BackendName
 
 	stream, err := h.service.GenerateStream(
 		ctx,

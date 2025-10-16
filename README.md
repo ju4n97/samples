@@ -127,22 +127,17 @@ task build-third-party-metal
 ### LLM
 
 - **[llama.cpp](https://github.com/ggml-org/llama.cpp)**
-  - Fuente: [`internal/backend/llama`](internal/backend/llama)
+  - Fuente: [`backend/llama`](backend/llama)
   - Aceleración: CPU, CUDA 11/12
   - Licencia: MIT
   - Estado: 🟡 Inestable
-
-- **[vLLM](https://github.com/vllm-project/vllm)**
-  - Aceleración: —
-  - Licencia: Apache 2.0
-  - Estado: 🔴 Planeado
 
 ---
 
 ### STT
 
 - **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**
-  - Fuente: [`internal/backend/whisper`](internal/backend/whisper)
+  - Fuente: [`backend/whisper`](backend/whisper)
   - Aceleración: CPU, CUDA 12
   - Licencia: MIT
   - Estado: 🟡 Inestable
@@ -164,7 +159,7 @@ task build-third-party-metal
 ### TTS
 
 - **[Piper](https://github.com/rhasspy/piper)**
-  - Fuente: [`internal/backend/piper`](internal/backend/piper)
+  - Fuente: [`backend/piper`](backend/piper)
   - Aceleración: CPU
   - Licencia: MIT
   - Estado: 🟡 Inestable

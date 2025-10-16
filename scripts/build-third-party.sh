@@ -22,8 +22,8 @@ fi
 mkdir -p "$LLAMA_BUILD"
 cd "$LLAMA_BUILD"
 cmake .. -DLLAMA_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target llama-cli -j"$(nproc)"
-cp bin/llama-cli "$BIN_DIR/llama-cli-cpu"
+cmake --build . --target llama-server -j"$(nproc)"
+cp bin/llama-server "$BIN_DIR/llama-server-cpu"
 
 # --- whisper.cpp ---
 echo "Building whisper.cpp (CPU)..."
@@ -38,8 +38,8 @@ fi
 mkdir -p "$WHISPER_BUILD"
 cd "$WHISPER_BUILD"
 cmake .. -DWHISPER_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target whisper-cli -j"$(nproc)"
-cp bin/whisper-cli "$BIN_DIR/whisper-cli-cpu"
+cmake --build . --target whisper-server -j"$(nproc)"
+cp bin/whisper-server "$BIN_DIR/whisper-server-cpu"
 
 # --- piper (CPU) ---
 echo "Downloading piper (CPU)..."

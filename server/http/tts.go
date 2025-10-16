@@ -10,6 +10,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/ekisa-team/syn4pse/backend"
+	"github.com/ekisa-team/syn4pse/backend/piper"
 	"github.com/ekisa-team/syn4pse/model"
 	"github.com/ekisa-team/syn4pse/service"
 )
@@ -51,7 +52,7 @@ func NewTTSHandler(api huma.API, service *service.TTS) *TTSHandler {
 
 // handleSynthesize handles the synthesize operation.
 func (h *TTSHandler) handleSynthesize(ctx context.Context, input *SynthesizeInput) (*huma.StreamResponse, error) {
-	provider := backend.BackendProviderPiper
+	provider := piper.BackendName
 
 	resp, err := h.service.Synthesize(
 		ctx,

@@ -6,206 +6,224 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
+	"net/http"
 	"time"
 
 	"github.com/ekisa-team/syn4pse/backend"
 )
 
+const (
+	BackendName = "llama.cpp"
+	BackendPort = 8081
+)
+
+// Backend implements backend.Backend for llama.cpp.
 type Backend struct {
-	executor *backend.Executor
+	binPath       string
+	serverManager *backend.ServerManager
+	client        *http.Client
+	port          int
 }
 
-type AssistantResponse struct {
-	Response string `json:"response"`
+// ChatMessage represents a single message in a chat conversation.
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
-func NewBackend(binPath string) (*Backend, error) {
-	executor, err := backend.NewExecutor(binPath, 1*time.Minute)
-	if err != nil {
-		return nil, err
-	}
+// ChatCompletionRequest is a request to the llama-server API.
+type ChatCompletionRequest struct {
+	Messages         []ChatMessage `json:"messages"`
+	Temperature      float64       `json:"temperature,omitempty"`
+	TopK             int           `json:"top_k,omitempty"`
+	TopP             float64       `json:"top_p,omitempty"`
+	MinP             float64       `json:"min_p,omitempty"`
+	NPredict         int           `json:"n_predict,omitempty"`
+	RepeatPenalty    float64       `json:"repeat_penalty,omitempty"`
+	PresencePenalty  float64       `json:"presence_penalty,omitempty"`
+	FrequencyPenalty float64       `json:"frequency_penalty,omitempty"`
+}
 
+// ChatCompletionResponse is a response from the llama-server API.
+type ChatCompletionResponse struct {
+	ID                string         `json:"id,omitempty"`
+	Object            string         `json:"object,omitempty"`
+	Created           int64          `json:"created,omitempty"`
+	Model             string         `json:"model,omitempty"`
+	SystemFingerprint string         `json:"system_fingerprint,omitempty"`
+	Choices           []Choice       `json:"choices"`
+	Usage             Usage          `json:"usage"`
+	Timings           map[string]any `json:"timings,omitempty"`
+}
+
+// Choice represents a single choice in a response
+type Choice struct {
+	Index        int     `json:"index"`
+	FinishReason string  `json:"finish_reason"`
+	Message      Message `json:"message"`
+}
+
+// Message represents a single message in a chat conversation
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// Usage represents the usage information of a response
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
+// NewBackend creates a new Backend instance.
+func NewBackend(binPath string, serverManager *backend.ServerManager) (*Backend, error) {
 	return &Backend{
-		executor: executor,
+		binPath:       binPath,
+		serverManager: serverManager,
+		client: &http.Client{
+			Timeout: 2 * time.Minute,
+		},
+		port: BackendPort,
 	}, nil
 }
 
-func (b *Backend) Provider() backend.BackendProvider {
-	return backend.BackendProviderLlamaCPP
+// Close implements backend.Backend.
+func (b *Backend) Close() error {
+	return b.serverManager.StopServer(BackendName, b.port)
 }
 
+// Provider implements backend.Backend.
+func (b *Backend) Provider() string {
+	return BackendName
+}
+
+// Infer implements backend.Backend.
 func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Response, error) {
-	args := b.buildArgs(req)
+	if err := b.serverManager.StartServer(backend.ServerConfig{
+		Name:       BackendName,
+		BinPath:    b.binPath,
+		Args:       []string{"--model", req.ModelPath, "--port", fmt.Sprintf("%d", b.port)},
+		Port:       b.port,
+		HealthPath: "/health",
+	}); err != nil {
+		return nil, fmt.Errorf("failed to start server: %w", err)
+	}
 
 	prompt, err := io.ReadAll(req.Input)
 	if err != nil {
-		return nil, fmt.Errorf("read input: %w", err)
+		return nil, fmt.Errorf("failed to read input: %w", err)
 	}
 
-	args = append(args, "--prompt", string(prompt))
+	completionReq := b.buildChatCompletionRequest(req, string(prompt))
 
-	stdout, stderr, err := b.executor.Execute(ctx, args, nil)
+	jsonData, err := json.Marshal(completionReq)
 	if err != nil {
-		return nil, fmt.Errorf("execution failed: %w\nstderr: %s", err, stderr)
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	text := b.parseOutput(string(stdout))
+	httpReq, err := http.NewRequestWithContext(ctx,
+		"POST",
+		fmt.Sprintf("http://localhost:%d/chat/completions", b.port),
+		bytes.NewReader(jsonData),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	start := time.Now()
+
+	resp, err := b.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	elapsed := time.Since(start).Seconds()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, body)
+	}
+
+	var completionResp ChatCompletionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&completionResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	content := ""
+	if len(completionResp.Choices) > 0 {
+		content = completionResp.Choices[0].Message.Content
+	}
 
 	return &backend.Response{
-		Output: bytes.NewReader([]byte(text)),
+		Output: bytes.NewReader([]byte(content)),
 		Metadata: &backend.ResponseMetadata{
-			Provider:    b.Provider(),
-			Model:       req.ModelPath,
-			Timestamp:   time.Now(),
-			OutputBytes: int64(len(text)),
-			BackendSpecific: map[string]string{
-				"stdout": string(stdout),
-				"stderr": string(stderr),
-				"args":   strings.Join(args, " "),
+			Provider:        b.Provider(),
+			Model:           req.ModelPath,
+			Timestamp:       time.Now(),
+			DurationSeconds: elapsed,
+			OutputSizeBytes: int64(len(content)),
+			BackendSpecific: map[string]any{
+				"response": completionResp,
 			},
 		},
 	}, nil
 }
 
-// InferStream executes inference and streams results as they're produced.
-func (b *Backend) InferStream(ctx context.Context, req *backend.Request) (<-chan backend.StreamChunk, error) {
-	args := b.buildArgs(req)
-
-	prompt, err := io.ReadAll(req.Input)
-	if err != nil {
-		return nil, fmt.Errorf("read input: %w", err)
-	}
-
-	args = append(args, "--prompt", string(prompt))
-
-	return b.executor.Stream(ctx, args, nil)
-}
-
-// buildArgs builds llama.cpp command-line arguments.
-func (b *Backend) buildArgs(req *backend.Request) []string {
-	args := []string{"--model", req.ModelPath}
-
+// buildChatCompletionRequest builds a ChatCompletionRequest from a backend.Request.
+func (s *Backend) buildChatCompletionRequest(req *backend.Request, prompt string) *ChatCompletionRequest {
 	p := req.Parameters
 	if p == nil {
 		p = make(map[string]any)
 	}
 
-	// System prompt
-	if v, ok := p["system_prompt"].(string); ok {
-		args = append(args, "--system-prompt", v)
+	messages := []ChatMessage{
+		{Role: "user", Content: prompt},
 	}
 
-	// Context window size (default: 4096)
-	if v, ok := p["n_ctx"].(int); ok {
-		args = append(args, "--ctx-size", fmt.Sprintf("%d", v))
-	} else {
-		args = append(args, "--ctx-size", "4096")
+	if sysPrompt, ok := p["system_prompt"].(string); ok && sysPrompt != "" {
+		messages = append([]ChatMessage{{Role: "system", Content: sysPrompt}}, messages...)
 	}
 
-	// Token limit (default: 128)
-	if v, ok := p["n_predict"].(int); ok {
-		args = append(args, "-n", fmt.Sprintf("%d", v))
-	} else {
-		args = append(args, "-n", "128")
+	return &ChatCompletionRequest{
+		Messages:         messages,
+		NPredict:         getInt(p, "n_predict", 128),
+		Temperature:      getFloat(p, "temperature", 0.7),
+		TopK:             getInt(p, "top_k", 40),
+		TopP:             getFloat(p, "top_p", 0.9),
+		MinP:             getFloat(p, "min_p", 0.05),
+		RepeatPenalty:    getFloat(p, "repeat_penalty", 1.1),
+		PresencePenalty:  getFloat(p, "presence_penalty", 0.0),
+		FrequencyPenalty: getFloat(p, "frequency_penalty", 0.0),
 	}
-
-	// GPU layers (default: -1 = full offload)
-	if v, ok := p["n_gpu_layers"].(int); ok {
-		args = append(args, "-ngl", fmt.Sprintf("%d", v))
-	} else {
-		args = append(args, "-ngl", "-1")
-	}
-
-	// Temperature (default: 0.7)
-	if v, ok := p["temperature"].(float64); ok {
-		args = append(args, "--temp", fmt.Sprintf("%.2f", v))
-	} else {
-		args = append(args, "--temp", "0.7")
-	}
-
-	// Top-p (default: 0.9)
-	if v, ok := p["top_p"].(float64); ok {
-		args = append(args, "--top-p", fmt.Sprintf("%.2f", v))
-	} else {
-		args = append(args, "--top-p", "0.9")
-	}
-
-	// Top-k (default: 40)
-	if v, ok := p["top_k"].(int); ok {
-		args = append(args, "--top-k", fmt.Sprintf("%d", v))
-	} else {
-		args = append(args, "--top-k", "40")
-	}
-
-	// Min-p (default: 0.05)
-	if v, ok := p["min_p"].(float64); ok {
-		args = append(args, "--min-p", fmt.Sprintf("%.2f", v))
-	} else {
-		args = append(args, "--min-p", "0.05")
-	}
-
-	// Repeat penalty (default: 1.1)
-	if v, ok := p["repeat_penalty"].(float64); ok {
-		args = append(args, "--repeat-penalty", fmt.Sprintf("%.2f", v))
-	} else {
-		args = append(args, "--repeat-penalty", "1.1")
-	}
-
-	// Presence penalty (no default, model-specific)
-	if v, ok := p["presence_penalty"].(float64); ok {
-		args = append(args, "--presence-penalty", fmt.Sprintf("%.2f", v))
-	}
-
-	// Frequency penalty used for repeat suppression (no default, model-specific)
-	if v, ok := p["frequency_penalty"].(float64); ok {
-		args = append(args, "--frequency-penalty", fmt.Sprintf("%.2f", v))
-	}
-
-	// JSON Schema mode for structured output
-	jsonSchema := `{"type":"object","properties":{"response":{"type":"string"}},"required":["response"]}`
-	if customSchema, ok := p["json_schema"].(string); ok {
-		jsonSchema = customSchema
-	}
-	args = append(args, "-j", jsonSchema)
-
-	// Conversation and runtime options
-	args = append(args, "--no-warmup")         // Skip model warm-up
-	args = append(args, "--jinja")             // Use chat template (Jinja format)
-	args = append(args, "-cnv")                // Conversation mode
-	args = append(args, "-st")                 // Single-turn: exit after response
-	args = append(args, "--no-display-prompt") // Don’t echo user prompt in output
-
-	return args
 }
 
-// parseOutput extracts the response from JSON output
-func (b *Backend) parseOutput(output string) string {
-	// Find JSON object in output
-	start := strings.Index(output, "{")
-	end := strings.LastIndex(output, "}")
-
-	if start == -1 || end == -1 || start >= end {
-		return ""
+// getInt safely retrieves an int from a map[string]any.
+func getInt(m map[string]any, key string, defaultValue int) int {
+	if val, ok := m[key]; ok {
+		// JSON numbers are decoded as float64 sometimes
+		if f, isFloat := val.(float64); isFloat {
+			return int(f)
+		}
+		if i, isInt := val.(int); isInt {
+			return i
+		}
 	}
-
-	jsonStr := output[start : end+1]
-
-	fmt.Println(jsonStr)
-
-	var result map[string]any
-	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
-		return ""
-	}
-
-	if response, ok := result["response"].(string); ok {
-		return response
-	}
-
-	return ""
+	return defaultValue
 }
 
-// Close cleans up resources. Llama does not have any resources to clean up.
-func (b *Backend) Close() error {
-	return nil
+// getFloat safely retrieves a float64 from a map[string]any.
+func getFloat(m map[string]any, key string, defaultValue float64) float64 {
+	if val, ok := m[key]; ok {
+		if f, isFloat := val.(float64); isFloat {
+			return f
+		}
+	}
+	return defaultValue
 }

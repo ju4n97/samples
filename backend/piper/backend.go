@@ -12,6 +12,10 @@ import (
 	"github.com/ekisa-team/syn4pse/backend"
 )
 
+const (
+	BackendName = "piper"
+)
+
 // Backend implements backend.Backend for Piper TTS.
 type Backend struct {
 	executor *backend.Executor
@@ -33,8 +37,8 @@ func NewBackend(binPath string) (*Backend, error) {
 }
 
 // Provider returns the backend provider.
-func (b *Backend) Provider() backend.BackendProvider {
-	return backend.BackendProviderPiper
+func (b *Backend) Provider() string {
+	return BackendName
 }
 
 // Infer synthesizes speech from text.
@@ -63,11 +67,11 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	return &backend.Response{
 		Output: bytes.NewReader(audioData),
 		Metadata: &backend.ResponseMetadata{
-			Provider:    b.Provider(),
-			Model:       req.ModelPath,
-			Timestamp:   time.Now(),
-			OutputBytes: int64(len(audioData)),
-			BackendSpecific: map[string]string{
+			Provider:        b.Provider(),
+			Model:           req.ModelPath,
+			Timestamp:       time.Now(),
+			OutputSizeBytes: int64(len(audioData)),
+			BackendSpecific: map[string]any{
 				"stdout": string(stdout),
 				"stderr": string(stderr),
 				"args":   strings.Join(args, " "),

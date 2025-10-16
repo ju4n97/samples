@@ -56,7 +56,7 @@ func main() {
 		),
 	)
 
-	manager := model.NewManager()
+	modelManager := model.NewManager()
 
 	watcher, err := config.NewWatcher(*flagConfigPath, *flagSchemaPath, func(cfg *config.Config, err error) {
 		if err != nil {
@@ -64,7 +64,7 @@ func main() {
 			return
 		}
 
-		if err := manager.LoadModelsFromConfig(ctx, cfg); err != nil {
+		if err := modelManager.LoadModelsFromConfig(ctx, cfg); err != nil {
 			slog.Error("Failed to load models from config", "error", err)
 			return
 		}
@@ -75,7 +75,7 @@ func main() {
 	}
 
 	cfg := watcher.Snapshot()
-	if err := manager.LoadModelsFromConfig(ctx, cfg); err != nil {
+	if err := modelManager.LoadModelsFromConfig(ctx, cfg); err != nil {
 		slog.Error("Failed to load models from config", "error", err)
 		return
 	}
@@ -85,7 +85,26 @@ func main() {
 	backends := backend.NewRegistry()
 	defer backends.Close()
 
-	registerBackends(backends)
+	serverManager := backend.NewServerManager()
+	defer serverManager.StopAll()
+
+	backendLlama, err := llama.NewBackend("./bin/llama-server-cuda", serverManager)
+	if err != nil {
+		slog.Error("Failed to create Llama backend", "error", err)
+	}
+	backends.Register(backendLlama)
+
+	backendWhisper, err := whisper.NewBackend("./bin/whisper-cli-cuda")
+	if err != nil {
+		slog.Error("Failed to create Whisper backend", "error", err)
+	}
+	backends.Register(backendWhisper)
+
+	backendPiper, err := piper.NewBackend("./bin/piper-cpu/piper")
+	if err != nil {
+		slog.Error("Failed to create Piper backend", "error", err)
+	}
+	backends.Register(backendPiper)
 
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -96,8 +115,8 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Build servers
-	httpServer := buildHTTPServer(*flagHTTPPort, backends, manager.Registry())
-	grpcServer := buildGRPCServer(backends, manager.Registry())
+	httpServer := buildHTTPServer(*flagHTTPPort, backends, modelManager.Registry())
+	grpcServer := buildGRPCServer(backends, modelManager.Registry())
 
 	// Start HTTP server
 	g.Go(func() error {
@@ -116,30 +135,6 @@ func main() {
 	}
 
 	slog.Info("Shutting down...")
-}
-
-// registerBackends registers the backends in the registry.
-func registerBackends(backends *backend.Registry) {
-	backendLlama, err := llama.NewBackend("./bin/llama-cli-cuda")
-	if err != nil {
-		slog.Error("Failed to create Llama backend", "error", err)
-		return
-	}
-	backends.Register(backendLlama)
-
-	backendWhisper, err := whisper.NewBackend("./bin/whisper-cli-cuda")
-	if err != nil {
-		slog.Error("Failed to create Whisper backend", "error", err)
-		return
-	}
-	backends.Register(backendWhisper)
-
-	backendPiper, err := piper.NewBackend("./bin/piper-cpu/piper")
-	if err != nil {
-		slog.Error("Failed to create Piper backend", "error", err)
-		return
-	}
-	backends.Register(backendPiper)
 }
 
 // runHTTPServer runs the HTTP server.

@@ -22,8 +22,8 @@ fi
 mkdir -p "$LLAMA_BUILD"
 cd "$LLAMA_BUILD"
 cmake .. -DLLAMA_CUDA=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target llama-cli -j"$(nproc)"
-cp bin/llama-cli "$BIN_DIR/llama-cli-cuda"
+cmake --build . --target llama-server -j"$(nproc)"
+cp bin/llama-server "$BIN_DIR/llama-server-cuda"
 
 # --- whisper.cpp (CUDA) ---
 echo "Building whisper.cpp (CUDA)..."
@@ -38,7 +38,7 @@ fi
 mkdir -p "$WHISPER_BUILD"
 cd "$WHISPER_BUILD"
 cmake .. -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target whisper-cli -j"$(nproc)"
-cp bin/whisper-cli "$BIN_DIR/whisper-cli-cuda"
+cmake --build . --target whisper-server -j"$(nproc)"
+cp bin/whisper-server "$BIN_DIR/whisper-server-cuda"
 
 echo "[+] All third-party binaries built with CUDA support."

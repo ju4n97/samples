@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"maps"
+	"log/slog"
 
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/model"
@@ -38,7 +38,7 @@ func (s *InferenceServer) Infer(ctx context.Context, req *inferencev1.InferenceR
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request: %v", err)
 	}
 
-	b, ok := s.backends.Get(backend.BackendProvider(req.Provider))
+	b, ok := s.backends.Get(req.Provider)
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "backend not found: %s", req.Provider)
 	}
@@ -88,7 +88,7 @@ func (s *InferenceServer) InferStream(stream inferencev1.InferenceService_InferS
 		return status.Errorf(codes.InvalidArgument, "invalid request: %v", err)
 	}
 
-	b, ok := s.backends.Get(backend.BackendProvider(req.Provider))
+	b, ok := s.backends.Get(req.Provider)
 	if !ok {
 		return status.Errorf(codes.NotFound, "backend not found: %s", req.Provider)
 	}
@@ -167,17 +167,30 @@ func buildMetadata(meta *backend.ResponseMetadata) *inferencev1.InferenceMetadat
 		return nil
 	}
 
-	backendSpecific := make(map[string]string)
+	var backendSpecific map[string]*structpb.Value
+
 	if meta.BackendSpecific != nil {
-		maps.Copy(backendSpecific, meta.BackendSpecific)
+		// 1. Marshal the entire Go map into JSON bytes. This is a very robust process.
+		jsonData, err := json.Marshal(meta.BackendSpecific)
+		if err == nil {
+			pbStruct := &structpb.Struct{}
+			// 2. Unmarshal the JSON bytes directly into a protobuf Struct.
+			if err := pbStruct.UnmarshalJSON(jsonData); err == nil {
+				// 3. The .Fields member of the struct is the exact map type we need.
+				backendSpecific = pbStruct.Fields
+			}
+
+			slog.Debug("converted backend-specific metadata", "backend_specific", backendSpecific)
+		}
 	}
 
 	return &inferencev1.InferenceMetadata{
 		Provider:        string(meta.Provider),
 		Model:           meta.Model,
 		Timestamp:       timestamppb.New(meta.Timestamp),
-		OutputBytes:     meta.OutputBytes,
-		BackendSpecific: backendSpecific,
+		OutputSizeBytes: meta.OutputSizeBytes,
+		DurationSeconds: meta.DurationSeconds,
+		BackendSpecific: backendSpecific, // Assign the correctly converted map
 	}
 }
 

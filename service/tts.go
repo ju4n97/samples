@@ -22,7 +22,7 @@ func NewTTS(backends *backend.Registry, models *model.Registry) *TTS {
 }
 
 // Synthesize synthesizes speech using a text-to-speech model.
-func (s *TTS) Synthesize(ctx context.Context, provider backend.BackendProvider, modelID string, req *backend.Request) (*backend.Response, error) {
+func (s *TTS) Synthesize(ctx context.Context, provider string, modelID string, req *backend.Request) (*backend.Response, error) {
 	b, ok := s.backends.Get(provider)
 	if !ok {
 		return nil, backend.ErrBackendNotFound

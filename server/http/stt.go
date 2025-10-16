@@ -10,6 +10,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/ekisa-team/syn4pse/backend"
+	"github.com/ekisa-team/syn4pse/backend/whisper"
 	"github.com/ekisa-team/syn4pse/model"
 	"github.com/ekisa-team/syn4pse/service"
 )
@@ -77,7 +78,7 @@ func (h *STTHandler) handleTranscribe(ctx context.Context, input *TranscribeInpu
 		}
 	}
 
-	provider := backend.BackendProviderWhisperCPP
+	provider := whisper.BackendName
 
 	resp, err := h.service.Transcribe(
 		ctx,

@@ -22,7 +22,7 @@ func NewLLM(backends *backend.Registry, models *model.Registry) *LLM {
 }
 
 // Generate generates text using a large language model.
-func (s *LLM) Generate(ctx context.Context, provider backend.BackendProvider, modelID string, req *backend.Request) (*backend.Response, error) {
+func (s *LLM) Generate(ctx context.Context, provider string, modelID string, req *backend.Request) (*backend.Response, error) {
 	b, ok := s.backends.Get(provider)
 	if !ok {
 		return nil, backend.ErrBackendNotFound
@@ -43,7 +43,7 @@ func (s *LLM) Generate(ctx context.Context, provider backend.BackendProvider, mo
 }
 
 // GenerateStream generates streamed text using a large language model.
-func (s *LLM) GenerateStream(ctx context.Context, provider backend.BackendProvider, modelID string, req *backend.Request) (<-chan backend.StreamChunk, error) {
+func (s *LLM) GenerateStream(ctx context.Context, provider string, modelID string, req *backend.Request) (<-chan backend.StreamChunk, error) {
 	b, ok := s.backends.Get(provider)
 	if !ok {
 		return nil, backend.ErrBackendNotFound

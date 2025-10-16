@@ -16,9 +16,9 @@ type MockBackend struct {
 	name string
 }
 
-func (m *MockBackend) Provider() BackendProvider {
+func (m *MockBackend) Provider() string {
 	args := m.Called()
-	return BackendProvider(args.String(0))
+	return string(args.String(0))
 }
 
 func (m *MockBackend) Infer(ctx context.Context, req *Request) (*Response, error) {

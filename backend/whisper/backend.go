@@ -14,7 +14,11 @@ import (
 	"github.com/ekisa-team/syn4pse/backend"
 )
 
-// Backend implements backend.Backend for Whisper.
+const (
+	BackendName = "whisper.cpp"
+)
+
+// Backend implements backend.Backend for whisper.cpp.
 type Backend struct {
 	executor *backend.Executor
 	tempDir  string
@@ -35,8 +39,8 @@ func NewBackend(binPath string) (*Backend, error) {
 }
 
 // Provider returns the backend provider.
-func (b *Backend) Provider() backend.BackendProvider {
-	return backend.BackendProviderWhisperCPP
+func (b *Backend) Provider() string {
+	return BackendName
 }
 
 // Infer transcribes audio to text.
@@ -68,11 +72,11 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	return &backend.Response{
 		Output: bytes.NewReader([]byte(text)),
 		Metadata: &backend.ResponseMetadata{
-			Provider:    b.Provider(),
-			Model:       req.ModelPath,
-			Timestamp:   time.Now(),
-			OutputBytes: int64(len(text)),
-			BackendSpecific: map[string]string{
+			Provider:        b.Provider(),
+			Model:           req.ModelPath,
+			Timestamp:       time.Now(),
+			OutputSizeBytes: int64(len(text)),
+			BackendSpecific: map[string]any{
 				"stdout": string(stdout),
 				"stderr": string(stderr),
 				"args":   strings.Join(args, " "),

@@ -22,7 +22,7 @@ func NewSTT(backends *backend.Registry, models *model.Registry) *STT {
 }
 
 // Transcribe transcribes audio using a speech-to-text model.
-func (s *STT) Transcribe(ctx context.Context, provider backend.BackendProvider, modelID string, req *backend.Request) (*backend.Response, error) {
+func (s *STT) Transcribe(ctx context.Context, provider string, modelID string, req *backend.Request) (*backend.Response, error) {
 	b, ok := s.backends.Get(provider)
 	if !ok {
 		return nil, backend.ErrBackendNotFound

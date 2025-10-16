@@ -1,17 +1,20 @@
 package backend
 
-import "sync"
+import (
+	"log/slog"
+	"sync"
+)
 
 // Registry manages backend instances.
 type Registry struct {
-	backends map[BackendProvider]Backend
+	backends map[string]Backend
 	mu       sync.RWMutex
 }
 
 // NewRegistry creates a new backend registry.
 func NewRegistry() *Registry {
 	return &Registry{
-		backends: make(map[BackendProvider]Backend),
+		backends: make(map[string]Backend),
 	}
 }
 
@@ -26,11 +29,13 @@ func (r *Registry) Register(b Backend) error {
 
 	r.backends[b.Provider()] = b
 
+	slog.Info("Backend registered", "provider", b.Provider())
+
 	return nil
 }
 
 // Get retrieves a backend by provider.
-func (r *Registry) Get(provider BackendProvider) (Backend, bool) {
+func (r *Registry) Get(provider string) (Backend, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -39,7 +44,7 @@ func (r *Registry) Get(provider BackendProvider) (Backend, bool) {
 }
 
 // GetStreaming retrieves a backend that supports streaming.
-func (r *Registry) GetStreaming(provider BackendProvider) (StreamingBackend, bool) {
+func (r *Registry) GetStreaming(provider string) (StreamingBackend, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -59,8 +64,11 @@ func (r *Registry) Close() error {
 
 	for _, b := range r.backends {
 		if err := b.Close(); err != nil {
+			slog.Error("Failed to close backend", "provider", b.Provider(), "error", err)
 			return err
 		}
+
+		slog.Info("Backend closed", "provider", b.Provider())
 	}
 
 	return nil
