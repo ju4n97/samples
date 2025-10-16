@@ -35,6 +35,15 @@ models:
         include: ["Phi-3.5-mini-instruct.Q4_K_M.gguf"]
     order: 30
 
+  llama-cpp-phi-3-medium-128k-instruct-q8_0_k_m:
+    type: llm
+    backend: llama.cpp
+    source:
+      huggingface:
+        repo: bartowski/Phi-3-medium-128k-instruct-GGUF
+        include: ["Phi-3-medium-128k-instruct-Q8_0.gguf"]
+    order: 40
+
   llama-cpp-tinyllama-1.1b-chat-v1.0:
     type: llm
     backend: llama.cpp
@@ -42,7 +51,7 @@ models:
       huggingface:
         repo: TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF
         include: ["tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"]
-    order: 40
+    order: 50
 
   whisper-cpp-tiny:
     type: stt
