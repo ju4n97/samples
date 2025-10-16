@@ -3,6 +3,7 @@ package grpc
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"maps"
@@ -33,7 +34,6 @@ func NewInferenceServer(backends *backend.Registry, models *model.Registry) *Inf
 
 // Infer handles synchronous inference requests.
 func (s *InferenceServer) Infer(ctx context.Context, req *inferencev1.InferenceRequest) (*inferencev1.InferenceResponse, error) {
-
 	if err := validateInferenceRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request: %v", err)
 	}
@@ -182,32 +182,16 @@ func buildMetadata(meta *backend.ResponseMetadata) *inferencev1.InferenceMetadat
 }
 
 // parseParameters converts protobuf Value map to Go native types.
-func parseParameters(params map[string]*structpb.Value) (map[string]any, error) {
+func parseParameters(params *structpb.Struct) (map[string]any, error) {
 	if params == nil {
-		return make(map[string]any), nil
+		return map[string]any{}, nil
 	}
 
-	parameters := make(map[string]any, len(params))
-	for k, v := range params {
-		if v == nil {
-			continue
-		}
+	jsonData, _ := params.MarshalJSON()
+	var native map[string]any
+	json.Unmarshal(jsonData, &native)
 
-		switch kind := v.ProtoReflect().Get(v.ProtoReflect().Descriptor().Fields().ByName("kind")).Interface().(type) {
-		case *structpb.Value_NullValue:
-			parameters[k] = nil
-		case *structpb.Value_NumberValue:
-			parameters[k] = v.GetNumberValue()
-		case *structpb.Value_StringValue:
-			parameters[k] = v.GetStringValue()
-		case *structpb.Value_BoolValue:
-			parameters[k] = v.GetBoolValue()
-		default:
-			return nil, fmt.Errorf("unsupported parameter type for key %s: %T", k, kind)
-		}
-	}
-
-	return parameters, nil
+	return native, nil
 }
 
 // mapBackendError converts backend errors to appropriate gRPC status codes.

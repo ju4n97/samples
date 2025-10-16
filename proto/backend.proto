@@ -10,9 +10,9 @@ import "google/protobuf/timestamp.proto";
 // Request for inference
 message InferenceRequest {
   string provider = 1;
-  string model_id = 2; // Logical model ID, e.g. "llama2-7b"
-  bytes input = 3;     // Raw input (text, audio, image, etc.)
-  map<string, google.protobuf.Value> parameters = 4;
+  string model_id = 2;                   // Logical model ID, e.g. "llama2-7b"
+  bytes input = 3;                       // Raw input (text, audio, image, etc.)
+  google.protobuf.Struct parameters = 4; // Backend-specific inference params
 }
 
 // Response for synchronous inference
