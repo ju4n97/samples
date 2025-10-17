@@ -94,7 +94,7 @@ func main() {
 	}
 	backends.Register(backendLlama)
 
-	backendWhisper, err := whisper.NewBackend("./bin/whisper-cli-cuda")
+	backendWhisper, err := whisper.NewBackend("./bin/whisper-server-cuda", serverManager)
 	if err != nil {
 		slog.Error("Failed to create Whisper backend", "error", err)
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/model"
@@ -39,7 +40,13 @@ func (s *LLM) Generate(ctx context.Context, provider string, modelID string, req
 		Parameters: req.Parameters,
 	}
 
-	return b.Infer(ctx, breq)
+	resp, err := b.Infer(ctx, breq)
+	if err != nil {
+		slog.Error("Failed to generate text", "error", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // GenerateStream generates streamed text using a large language model.
@@ -65,5 +72,11 @@ func (s *LLM) GenerateStream(ctx context.Context, provider string, modelID strin
 		Parameters: req.Parameters,
 	}
 
-	return bs.InferStream(ctx, breq)
+	resp, err := bs.InferStream(ctx, breq)
+	if err != nil {
+		slog.Error("Failed to generate streamed text", "error", err)
+		return nil, err
+	}
+
+	return resp, nil
 }

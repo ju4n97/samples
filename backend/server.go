@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
@@ -51,6 +52,10 @@ func (sm *ServerManager) StartServer(cfg ServerConfig) error {
 		return nil // Already running
 	}
 
+	if info, err := os.Stat(cfg.BinPath); err != nil || info.IsDir() {
+		return fmt.Errorf("failed to start %s server: %w", cfg.Name, err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, cfg.BinPath, cfg.Args...)
 
@@ -77,7 +82,7 @@ func (sm *ServerManager) StartServer(cfg ServerConfig) error {
 
 	timeout := cfg.ReadyTimeout
 	if timeout == 0 {
-		timeout = 30 * time.Second
+		timeout = 10 * time.Second
 	}
 
 	if err := sm.waitForServer(baseURL+healthPath, timeout); err != nil {

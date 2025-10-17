@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/model"
@@ -39,5 +40,11 @@ func (s *TTS) Synthesize(ctx context.Context, provider string, modelID string, r
 		Parameters: req.Parameters,
 	}
 
-	return b.Infer(ctx, breq)
+	resp, err := b.Infer(ctx, breq)
+	if err != nil {
+		slog.Error("Failed to synthesize speech", "error", err)
+		return nil, err
+	}
+
+	return resp, nil
 }

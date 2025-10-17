@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ekisa-team/syn4pse/backend"
+	"github.com/ekisa-team/syn4pse/mapsafe"
 )
 
 const (
@@ -100,10 +101,16 @@ func (b *Backend) Provider() string {
 
 // Infer implements backend.Backend.
 func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Response, error) {
+	args := []string{
+		"--model", req.ModelPath,
+		"--host", "127.0.0.1",
+		"--port", fmt.Sprintf("%d", b.port),
+	}
+
 	if err := b.serverManager.StartServer(backend.ServerConfig{
 		Name:       BackendName,
 		BinPath:    b.binPath,
-		Args:       []string{"--model", req.ModelPath, "--port", fmt.Sprintf("%d", b.port)},
+		Args:       args,
 		Port:       b.port,
 		HealthPath: "/health",
 	}); err != nil {
@@ -193,37 +200,13 @@ func (s *Backend) buildChatCompletionRequest(req *backend.Request, prompt string
 
 	return &ChatCompletionRequest{
 		Messages:         messages,
-		NPredict:         getInt(p, "n_predict", 128),
-		Temperature:      getFloat(p, "temperature", 0.7),
-		TopK:             getInt(p, "top_k", 40),
-		TopP:             getFloat(p, "top_p", 0.9),
-		MinP:             getFloat(p, "min_p", 0.05),
-		RepeatPenalty:    getFloat(p, "repeat_penalty", 1.1),
-		PresencePenalty:  getFloat(p, "presence_penalty", 0.0),
-		FrequencyPenalty: getFloat(p, "frequency_penalty", 0.0),
+		NPredict:         mapsafe.Get(p, "n_predict", 128),
+		Temperature:      mapsafe.Get(p, "temperature", 0.7),
+		TopK:             mapsafe.Get(p, "top_k", 40),
+		TopP:             mapsafe.Get(p, "top_p", 0.9),
+		MinP:             mapsafe.Get(p, "min_p", 0.05),
+		RepeatPenalty:    mapsafe.Get(p, "repeat_penalty", 1.1),
+		PresencePenalty:  mapsafe.Get(p, "presence_penalty", 0.0),
+		FrequencyPenalty: mapsafe.Get(p, "frequency_penalty", 0.0),
 	}
-}
-
-// getInt safely retrieves an int from a map[string]any.
-func getInt(m map[string]any, key string, defaultValue int) int {
-	if val, ok := m[key]; ok {
-		// JSON numbers are decoded as float64 sometimes
-		if f, isFloat := val.(float64); isFloat {
-			return int(f)
-		}
-		if i, isInt := val.(int); isInt {
-			return i
-		}
-	}
-	return defaultValue
-}
-
-// getFloat safely retrieves a float64 from a map[string]any.
-func getFloat(m map[string]any, key string, defaultValue float64) float64 {
-	if val, ok := m[key]; ok {
-		if f, isFloat := val.(float64); isFloat {
-			return f
-		}
-	}
-	return defaultValue
 }
