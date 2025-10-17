@@ -130,7 +130,7 @@ task build-third-party-metal
   - Fuente: [`backend/llama`](backend/llama)
   - Aceleración: CPU, CUDA 11/12
   - Licencia: MIT
-  - Estado: 🟡 Inestable
+  - Estado: 🟢 Soportado
 
 ---
 
@@ -140,7 +140,7 @@ task build-third-party-metal
   - Fuente: [`backend/whisper`](backend/whisper)
   - Aceleración: CPU, CUDA 12
   - Licencia: MIT
-  - Estado: 🟡 Inestable
+  - Estado: 🟢 Soportado
 
 - **[Vosk](https://github.com/alphacep/vosk-api)**
   - Licencia: Apache 2.0
@@ -162,7 +162,7 @@ task build-third-party-metal
   - Fuente: [`backend/piper`](backend/piper)
   - Aceleración: CPU
   - Licencia: MIT
-  - Estado: 🟡 Inestable
+  - Estado: 🟡 Experimental
 
 - **[Coqui TTS](https://github.com/coqui-ai/TTS)**
   - Licencia: MPL 2.0
@@ -196,10 +196,10 @@ task build-third-party-metal
 
 **Leyenda de estado:**
 
-- 🟢 Estable: probado y listo para producción.
-- 🟡 Inestable: funcional, pero con errores, incompleto o rendimiento variable.
-- 🟠 Desarrollo: integración activa, aún incompleta.
-- 🔴 Planeado: integración futura (PRs bienvenidos).
+- 🟢 Soportado: probado, estable y recomendado para uso en producción.
+- 🟡 Experimental: funcional, pero sujeto a cambios, errores o limitaciones.
+- 🟠 Desarrollo: integración activa, con funcionalidades aún en construcción.
+- 🔴 Planeado: previsto para implementación futura (PRs bienvenidos).
 
 Puede contribuir a este proyecto recomendando o agregando soporte para nuevos backends. Consulte la guía en: <https://syn4pse.pages.dev/backends/quickstart>
 
