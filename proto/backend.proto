@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package inference.v1;
 
-option go_package = "pb/inference/v1;inferencev1";
+option go_package = "inference/v1;inferencev1";
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
