@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,25 +24,25 @@ const (
 type HuggingFaceDownloader struct{}
 
 // Download downloads Hugging Face model to local cache and returns the actual model file path.
-func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *config.ModelConfig, targetDir string) (string, bool, error) {
+func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *config.ModelConfig, targetDir string) (string, error) {
 	source, err := modelConfig.GetSource()
 	if err != nil {
-		return "", false, fmt.Errorf("failed to get model source: %w", err)
+		return "", fmt.Errorf("manager: huggingface: failed to get model source: %w", err)
 	}
 
 	hfSource, ok := source.(config.HuggingFaceSource)
 	if !ok {
-		return "", false, fmt.Errorf("invalid source type: %T", source)
+		return "", fmt.Errorf("huggingface: invalid source type: %T", source)
 	}
 
 	repo := strings.TrimSpace(hfSource.Repo)
 	if repo == "" {
-		return "", false, fmt.Errorf("invalid repo name: %s", repo)
+		return "", fmt.Errorf("huggingface: invalid repo name: %s", repo)
 	}
 
 	fullPath := filepath.Join(targetDir, repo)
 	if err := os.MkdirAll(fullPath, 0o755); err != nil {
-		return "", false, fmt.Errorf("failed to create directory: %w", err)
+		return "", fmt.Errorf("manager: huggingface: failed to create directory: %w", err)
 	}
 
 	args := []string{
@@ -75,7 +76,7 @@ func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *confi
 	}
 
 	if hfSource.MaxWorkers > 0 {
-		args = append(args, "--max-workers", fmt.Sprintf("%d", hfSource.MaxWorkers))
+		args = append(args, "--max-workers", strconv.Itoa(hfSource.MaxWorkers))
 	}
 
 	var lastErr error
@@ -94,13 +95,8 @@ func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *confi
 
 		if err == nil {
 			slog.Info("Model downloaded successfully", "repo", repo, "path", fullPath, "attempt", attempt+1)
-
-			modelPath, err := resolveModelPath(fullPath, hfSource.Include)
-			if err != nil {
-				return "", false, fmt.Errorf("failed to resolve model path: %w", err)
-			}
-
-			return modelPath, false, nil
+			modelPath := resolveModelPath(fullPath, hfSource.Include)
+			return modelPath, nil
 		}
 
 		lastErr = err
@@ -109,20 +105,20 @@ func (d *HuggingFaceDownloader) Download(ctx context.Context, modelConfig *confi
 		if delayCtx.Err() == context.DeadlineExceeded {
 			slog.Warn("Download timed out", "repo", repo, "path", fullPath, "attempt", attempt+1)
 		} else if delayCtx.Err() == context.Canceled {
-			return "", false, fmt.Errorf("download canceled: %w", err)
+			return "", fmt.Errorf("huggingface: download canceled: %w", err)
 		}
 	}
 
-	return "", false, lastErr
+	return "", lastErr
 }
 
 // resolveModelPath finds the actual model file based on include patterns.
 // If no include patterns or multiple files match, returns the base directory.
 // If a single specific file is matched, returns that file path.
-func resolveModelPath(baseDir string, includePatterns []string) (string, error) {
+func resolveModelPath(baseDir string, includePatterns []string) string {
 	// If no include patterns, return the directory
 	if len(includePatterns) == 0 {
-		return baseDir, nil
+		return baseDir
 	}
 
 	// Collect all matching files
@@ -140,7 +136,7 @@ func resolveModelPath(baseDir string, includePatterns []string) (string, error) 
 
 	if len(allMatches) == 0 {
 		slog.Warn("No files matched include patterns, using base directory", "patterns", includePatterns)
-		return baseDir, nil
+		return baseDir
 	}
 
 	// Filter out directories, keep only files
@@ -157,25 +153,25 @@ func resolveModelPath(baseDir string, includePatterns []string) (string, error) 
 
 	if len(fileMatches) == 0 {
 		// Only directories matched, return base directory
-		return baseDir, nil
+		return baseDir
 	}
 
 	if len(fileMatches) == 1 {
 		// Single file matched,this is the model file
 		slog.Info("Resolved model file", "path", fileMatches[0])
-		return fileMatches[0], nil
+		return fileMatches[0]
 	}
 
 	// Multiple files matched, try to find the primary model file
 	modelFile := findPrimaryModelFile(fileMatches)
 	if modelFile != "" {
 		slog.Info("Resolved primary model file from multiple matches", "path", modelFile, "total_matches", len(fileMatches))
-		return modelFile, nil
+		return modelFile
 	}
 
 	// Can't determine primary file, return base directory and let backend handle it
 	slog.Warn("Multiple files matched, using base directory", "count", len(fileMatches), "files", fileMatches)
-	return baseDir, nil
+	return baseDir
 }
 
 // findPrimaryModelFile attempts to identify the primary model file from multiple matches.

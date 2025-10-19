@@ -6,9 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/ekisa-team/syn4pse/env"
 	"github.com/lmittmann/tint"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/ekisa-team/syn4pse/env"
 )
 
 // Logger is a wrapper around slog.Logger.
@@ -17,12 +18,12 @@ type Logger = *slog.Logger
 // Config holds configuration for the logger.
 type Config struct {
 	LogFile     string
+	MaxSizeMB   int
+	MaxBackups  int
+	MaxAge      int
 	LogToFile   bool
 	LogToStdout bool
-	MaxSizeMB   int  // MaxSizeMB is the maximum size in megabytes before rotation.
-	MaxBackups  int  // MaxBackups is the maximum number of old log files to retain.
-	MaxAge      int  // MaxAge is the maximum number of days to retain old log files.
-	Compress    bool // Compress is whether to compress rotated log files.
+	Compress    bool
 }
 
 // DefaultConfig returns the default configuration for the logger.

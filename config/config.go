@@ -9,50 +9,50 @@ type SourceType string
 
 const (
 	SourceTypeHuggingFace SourceType = "huggingface"
-	// TODO: implement SourceTypeLocal
+	// TODO: implement SourceTypeLocal.
 )
 
 // Config holds the main configuration for the application.
 type Config struct {
-	Version  string                 `yaml:"version" json:"version"`
-	Storage  StorageConfig          `yaml:"storage,omitempty" json:"storage,omitempty"`
-	Models   map[string]ModelConfig `yaml:"models" json:"models"`
-	Services ServicesConfig         `yaml:"services" json:"services"`
+	Version  string                 `json:"version"           yaml:"version"`
+	Storage  StorageConfig          `json:"storage,omitempty" yaml:"storage,omitempty"`
+	Models   map[string]ModelConfig `json:"models"            yaml:"models"`
+	Services ServicesConfig         `json:"services"          yaml:"services"`
 }
 
 // StorageConfig holds configuration for caching and auto-download.
 type StorageConfig struct {
-	ModelsDir string `yaml:"models_dir,omitempty" json:"models_dir,omitempty"`
+	ModelsDir string `json:"models_dir,omitempty" yaml:"models_dir,omitempty"`
 }
 
 // ModelConfig holds configuration for a specific model.
 type ModelConfig struct {
-	Type    string       `yaml:"type" json:"type"`       // "stt", "tts", "llm", "nlu"
-	Backend string       `yaml:"backend" json:"backend"` // e.g., "llama.cpp"
-	Source  SourceConfig `yaml:"source" json:"source"`   // e.g., {"huggingface": {"repo": "Systran/faster-whisper-tiny"}}
-	Order   int          `yaml:"order" json:"order"`     // Lower = higher priority
-	Tags    []string     `yaml:"tags" json:"tags"`       // e.g., ["multilingual", "streaming"]
+	Source  SourceConfig `json:"source"  yaml:"source"`
+	Type    string       `json:"type"    yaml:"type"`
+	Backend string       `json:"backend" yaml:"backend"`
+	Tags    []string     `json:"tags"    yaml:"tags"`
+	Order   int          `json:"order"   yaml:"order"`
 }
 
 // SourceConfig wraps optional sources (only one should be set).
 // This struct replaces the incorrectly named "ModelSourceConfig".
 type SourceConfig struct {
-	HuggingFace *HuggingFaceSource `yaml:"huggingface,omitempty" json:"huggingface,omitempty"`
+	HuggingFace *HuggingFaceSource `json:"huggingface,omitempty" yaml:"huggingface,omitempty"`
 	// Local       *LocalSource       `yaml:"local,omitempty" json:"local,omitempty"`
 	// S3          *S3Source          `yaml:"s3,omitempty" json:"s3,omitempty"`
 }
 
 // ServicesConfig holds configuration for all services.
 type ServicesConfig struct {
-	LLM ServicesConfigAssignment `yaml:"llm" json:"llm"`
-	NLU ServicesConfigAssignment `yaml:"nlu" json:"nlu"`
-	STT ServicesConfigAssignment `yaml:"stt" json:"stt"`
-	TTS ServicesConfigAssignment `yaml:"tts" json:"tts"`
+	LLM ServicesConfigAssignment `json:"llm" yaml:"llm"`
+	NLU ServicesConfigAssignment `json:"nlu" yaml:"nlu"`
+	STT ServicesConfigAssignment `json:"stt" yaml:"stt"`
+	TTS ServicesConfigAssignment `json:"tts" yaml:"tts"`
 }
 
 // ServicesConfigAssignment holds model assignments for a service.
 type ServicesConfigAssignment struct {
-	Models []string `yaml:"models" json:"models"` // List of model IDs
+	Models []string `json:"models" yaml:"models"` // List of model IDs
 }
 
 // -------------------------
@@ -66,14 +66,14 @@ type ModelSource interface {
 
 // HuggingFaceSource represents a Hugging Face model repository source.
 type HuggingFaceSource struct {
-	Repo          string   `yaml:"repo" json:"repo"`
-	Revision      string   `yaml:"revision,omitempty" json:"revision,omitempty"`
-	RepoType      string   `yaml:"repo_type,omitempty" json:"repo_type,omitempty"`
-	Include       []string `yaml:"include,omitempty" json:"include,omitempty"`
-	Exclude       []string `yaml:"exclude,omitempty" json:"exclude,omitempty"`
-	ForceDownload bool     `yaml:"force_download,omitempty" json:"force_download,omitempty"`
-	Token         string   `yaml:"token,omitempty" json:"token,omitempty"`
-	MaxWorkers    int      `yaml:"max_workers,omitempty" json:"max_workers,omitempty"`
+	Repo          string   `json:"repo"                     yaml:"repo"`
+	Revision      string   `json:"revision,omitempty"       yaml:"revision,omitempty"`
+	RepoType      string   `json:"repo_type,omitempty"      yaml:"repo_type,omitempty"`
+	Token         string   `json:"token,omitempty"          yaml:"token,omitempty"`
+	Include       []string `json:"include,omitempty"        yaml:"include,omitempty"`
+	Exclude       []string `json:"exclude,omitempty"        yaml:"exclude,omitempty"`
+	MaxWorkers    int      `json:"max_workers,omitempty"    yaml:"max_workers,omitempty"`
+	ForceDownload bool     `json:"force_download,omitempty" yaml:"force_download,omitempty"`
 }
 
 // Type returns the Hugging Face source type.

@@ -10,7 +10,7 @@ import (
 
 // Downloader downloads a model to local cache.
 type Downloader interface {
-	Download(ctx context.Context, modelConfig *config.ModelConfig, targetDir string) (string, bool, error)
+	Download(ctx context.Context, modelConfig *config.ModelConfig, targetDir string) (string, error)
 }
 
 // registry maps source types to their downloader.
@@ -22,7 +22,7 @@ var registry = map[config.SourceType]Downloader{
 func EnsureModelsDirectory(targetDir string) error {
 	err := os.MkdirAll(targetDir, 0o755)
 	if err != nil {
-		return fmt.Errorf("failed to create models directory: %w", err)
+		return fmt.Errorf("manager: failed to create models directory: %w", err)
 	}
 
 	return nil

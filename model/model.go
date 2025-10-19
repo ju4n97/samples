@@ -51,23 +51,20 @@ const (
 
 // ModelInstance represents a loaded model profile.
 type ModelInstance struct {
-	ID     string              `json:"id"`
-	Path   string              `json:"-"`
-	Config *config.ModelConfig `json:"config"`
-
-	// Runtime state
-	Status   ModelStatus `json:"status"`
-	LoadedAt *time.Time  `json:"loaded_at,omitempty"`
-	Error    string      `json:"error,omitempty"`
-	err      error       `json:"-"`
+	Config   *config.ModelConfig `json:"config"`
+	LoadedAt *time.Time          `json:"loaded_at,omitempty"`
+	ID       string              `json:"id"`
+	Path     string              `json:"-"`
+	Status   ModelStatus         `json:"status"`
+	Error    string              `json:"error,omitempty"`
 }
 
 // NewModelInstance creates a new model instance.
-func NewModelInstance(config *config.ModelConfig, id string, path string) *ModelInstance {
+func NewModelInstance(cfg *config.ModelConfig, id, path string) *ModelInstance {
 	return &ModelInstance{
 		ID:     id,
 		Path:   path,
-		Config: config,
+		Config: cfg,
 		Status: ModelStatusUnloaded,
 	}
 }
@@ -83,6 +80,5 @@ func (mi *ModelInstance) SetStatus(status ModelStatus) {
 
 // SetError sets the error associated with the model instance.
 func (mi *ModelInstance) SetError(err error) {
-	mi.err = err
 	mi.Error = err.Error()
 }

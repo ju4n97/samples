@@ -2,22 +2,18 @@ package model
 
 import (
 	"sync"
-
-	"github.com/ekisa-team/syn4pse/config"
 )
 
 // Registry stores loaded model instances.
 type Registry struct {
 	models map[string]*ModelInstance
-	config *config.Config
 	mu     sync.RWMutex
 }
 
 // NewRegistry creates a new model registry.
-func NewRegistry(config *config.Config) *Registry {
+func NewRegistry() *Registry {
 	return &Registry{
 		models: make(map[string]*ModelInstance),
-		config: config,
 	}
 }
 

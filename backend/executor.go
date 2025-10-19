@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"time"
@@ -21,27 +22,29 @@ type CommandRunner interface {
 type ExecCommandRunner struct{}
 
 // Run runs a command.
-func (ExecCommandRunner) Run(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
+func (ExecCommandRunner) Run(ctx context.Context, name string, args []string, stdin io.Reader) (stdout, stderr []byte, err error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = stdin
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return stdout.Bytes(), stderr.Bytes(), err
+
+	var outBuf, errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
+
+	stdout, stderr, err = outBuf.Bytes(), errBuf.Bytes(), cmd.Run()
+	return stdout, stderr, err
 }
 
 // Start starts a command.
-func (ExecCommandRunner) Start(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+func (ExecCommandRunner) Start(ctx context.Context, name string, args []string, stdin io.Reader) (stdout, stderr io.ReadCloser, wait func() error, err error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = stdin
 
-	stdout, err := cmd.StdoutPipe()
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	stderr, err := cmd.StderrPipe()
+	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -50,14 +53,14 @@ func (ExecCommandRunner) Start(ctx context.Context, name string, args []string, 
 		return nil, nil, nil, err
 	}
 
-	return stdout, stderr, cmd.Wait, nil
+	return stdoutPipe, stderrPipe, cmd.Wait, nil
 }
 
 // Executor runs commands.
 type Executor struct {
+	runner     CommandRunner
 	binaryPath string
 	timeout    time.Duration
-	runner     CommandRunner
 }
 
 // NewExecutor creates an executor.
@@ -83,7 +86,7 @@ func NewExecutorWithRunner(binaryPath string, timeout time.Duration, runner Comm
 }
 
 // Execute runs the command and returns output.
-func (e *Executor) Execute(ctx context.Context, args []string, stdin io.Reader) ([]byte, []byte, error) {
+func (e *Executor) Execute(ctx context.Context, args []string, stdin io.Reader) (stdout, stderr []byte, err error) {
 	ctx, cancel := context.WithTimeout(ctx, e.timeout)
 	defer cancel()
 
@@ -97,7 +100,7 @@ func (e *Executor) Stream(ctx context.Context, args []string, stdin io.Reader) (
 	stdout, stderr, wait, err := e.runner.Start(ctx, e.binaryPath, args, stdin)
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("failed to start command: %w", err)
+		return nil, fmt.Errorf("manager: executor: failed to start command: %w", err)
 	}
 
 	ch := make(chan StreamChunk, 32)
@@ -110,7 +113,9 @@ func (e *Executor) Stream(ctx context.Context, args []string, stdin io.Reader) (
 		stderrBuf := new(bytes.Buffer)
 		stderrDone := make(chan struct{})
 		go func() {
-			io.Copy(stderrBuf, stderr)
+			if _, err := io.Copy(stderrBuf, stderr); err != nil {
+				slog.Error("Failed to read stderr", "error", err)
+			}
 			close(stderrDone)
 		}()
 

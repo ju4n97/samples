@@ -3,9 +3,10 @@ package env_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ekisa-team/syn4pse/env"
 	"github.com/ekisa-team/syn4pse/envvar"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEnv_String(t *testing.T) {
@@ -13,8 +14,8 @@ func TestEnv_String(t *testing.T) {
 
 	tests := []struct {
 		name string
-		env  env.Env
 		want string
+		env  env.Env
 	}{
 		{
 			name: "returns development for EnvDevelopment",

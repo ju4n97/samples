@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ekisa-team/syn4pse/backend"
 )
 
 // mockRunner is a simple test double.
@@ -19,11 +20,11 @@ type mockRunner struct {
 	startFunc func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error)
 }
 
-func (m *mockRunner) Run(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
+func (m *mockRunner) Run(ctx context.Context, name string, args []string, stdin io.Reader) (stdout, stderr []byte, err error) {
 	return m.runFunc(ctx, name, args, stdin)
 }
 
-func (m *mockRunner) Start(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+func (m *mockRunner) Start(ctx context.Context, name string, args []string, stdin io.Reader) (stdout, stderr io.ReadCloser, cancel func() error, err error) {
 	return m.startFunc(ctx, name, args, stdin)
 }
 
@@ -177,11 +178,11 @@ func TestStream(t *testing.T) {
 		ch, err := ex.Stream(context.Background(), []string{}, nil)
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to start command")
+		assert.Contains(t, err.Error(), "executor: failed to start command")
 		assert.Nil(t, ch)
 	})
 
-	t.Run("context cancelled", func(t *testing.T) {
+	t.Run("context canceled", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		runner := &mockRunner{
@@ -246,10 +247,10 @@ func TestStream(t *testing.T) {
 
 // slowReader simulates slow I/O and cancels context after first read.
 type slowReader struct {
+	cancel context.CancelFunc
 	data   string
 	pos    int
 	delay  time.Duration
-	cancel context.CancelFunc
 }
 
 func (s *slowReader) Read(p []byte) (int, error) {
@@ -282,7 +283,7 @@ func BenchmarkExecute(b *testing.B) {
 	ctx := context.Background()
 
 	for b.Loop() {
-		ex.Execute(ctx, []string{"arg"}, nil)
+		_, _, _ = ex.Execute(ctx, []string{"arg"}, nil)
 	}
 }
 

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/ekisa-team/syn4pse/backend"
@@ -21,43 +23,43 @@ const (
 
 // Backend implements backend.Backend for whisper.cpp.
 type Backend struct {
-	binPath       string
 	serverManager *backend.ServerManager
 	client        *http.Client
+	binPath       string
 	port          int
 }
 
 // TranscriptionRequest represents a request to the whisper-server API.
 type TranscriptionRequest struct {
 	Language     string  `json:"language,omitempty"`
+	Prompt       string  `json:"prompt,omitempty"`
 	Temperature  float64 `json:"temperature,omitempty"`
 	BeamSize     int     `json:"beam_size,omitempty"`
 	BestOf       int     `json:"best_of,omitempty"`
 	Translate    bool    `json:"translate,omitempty"`
 	NoTimestamps bool    `json:"no_timestamps,omitempty"`
-	Prompt       string  `json:"prompt,omitempty"`
 }
 
 // TranscriptionResponse represents a response from the whisper-server API.
 type TranscriptionResponse struct {
+	LanguageProbabilities       map[string]float64  `json:"language_probabilities,omitempty"`
 	Task                        string              `json:"task,omitempty"`
 	Language                    string              `json:"language,omitempty"`
-	Duration                    float64             `json:"durationm,omitempty"`
 	Text                        string              `json:"text,omitempty"`
-	Segments                    []TranscriptSegment `json:"segments,omitempty"`
 	DetectedLanguage            string              `json:"detected_language,omitempty"`
+	Segments                    []TranscriptSegment `json:"segments,omitempty"`
+	Duration                    float64             `json:"durationm,omitempty"`
 	DetectedLanguageProbability float64             `json:"detected_language_probability,omitempty"`
-	LanguageProbabilities       map[string]float64  `json:"language_probabilities,omitempty"`
 }
 
 // TranscriptSegment represents a single segment in the transcription.
 type TranscriptSegment struct {
-	ID           int                        `json:"id"`
 	Text         string                     `json:"text"`
-	Start        float64                    `json:"start"`
-	End          float64                    `json:"end"`
 	Tokens       []int                      `json:"tokens,omitempty"`
 	Words        []TranscriptionSegmentWord `json:"words,omitempty"`
+	ID           int                        `json:"id"`
+	Start        float64                    `json:"start"`
+	End          float64                    `json:"end"`
 	Temperature  float64                    `json:"temperature,omitempty"`
 	AvgLogprob   float64                    `json:"avg_logprob,omitempty"`
 	NoSpeechProb float64                    `json:"no_speech_prob,omitempty"`
@@ -78,7 +80,7 @@ func NewBackend(binPath string, serverManager *backend.ServerManager) (*Backend,
 		binPath:       binPath,
 		serverManager: serverManager,
 		client: &http.Client{
-			Timeout: 5 * time.Minute, // Transcription can take longer
+			Timeout: 5 * time.Minute,
 		},
 		port: BackendPort,
 	}, nil
@@ -96,10 +98,9 @@ func (b *Backend) Provider() string {
 
 // Infer implements backend.Backend.
 func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Response, error) {
-	// Build server arguments
 	args := []string{
 		"--model", req.ModelPath,
-		"--port", fmt.Sprintf("%d", b.port),
+		"--port", strconv.Itoa(b.port),
 		"--host", "127.0.0.1",
 	}
 
@@ -110,12 +111,12 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 		Port:       b.port,
 		HealthPath: "/", // Whisper server doesn't have a dedicated health endpoint
 	}); err != nil {
-		return nil, fmt.Errorf("failed to start server: %w", err)
+		return nil, fmt.Errorf("manager: failed to start server: %w", err)
 	}
 
 	audioData, err := io.ReadAll(req.Input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read audio input: %w", err)
+		return nil, fmt.Errorf("manager: failed to read audio input: %w", err)
 	}
 
 	// Create multipart form data
@@ -125,29 +126,29 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	// Add audio file
 	part, err := writer.CreateFormFile("file", "audio.wav")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create form file: %w", err)
+		return nil, fmt.Errorf("manager: failed to create form file: %w", err)
 	}
 	if _, err := part.Write(audioData); err != nil {
-		return nil, fmt.Errorf("failed to write audio data: %w", err)
+		return nil, fmt.Errorf("manager: failed to write audio data: %w", err)
 	}
 
 	// Add parameters to form
 	transcriptionReq := b.buildTranscriptionRequest(req)
 	if err := b.addTranscriptionParams(writer, transcriptionReq); err != nil {
-		return nil, fmt.Errorf("failed to add parameters: %w", err)
+		return nil, fmt.Errorf("manager: failed to add parameters: %w", err)
 	}
 
 	if err := writer.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+		return nil, fmt.Errorf("manager: failed to close multipart writer: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx,
-		"POST",
+		http.MethodPost,
 		fmt.Sprintf("http://localhost:%d/inference", b.port),
 		&requestBody,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("manager: failed to create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
 
@@ -155,23 +156,27 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 
 	resp, err := b.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("manager: failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	elapsed := time.Since(start).Seconds()
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read response body: %w", err)
+			return nil, fmt.Errorf("manager: failed to read response body: %w", err)
 		}
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, body)
+		return nil, fmt.Errorf("manager: request failed with status code %d: %s", resp.StatusCode, body)
 	}
 
 	var transcriptionResp TranscriptionResponse
 	if err := json.NewDecoder(resp.Body).Decode(&transcriptionResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, fmt.Errorf("manager: failed to decode response: %w", err)
 	}
 
 	return &backend.Response{
@@ -213,16 +218,16 @@ func (b *Backend) addTranscriptionParams(w *multipart.Writer, req *Transcription
 		"language":        req.Language,
 		"response_format": "verbose_json",
 		"temperature":     fmt.Sprintf("%.2f", req.Temperature),
-		"translate":       fmt.Sprintf("%t", req.Translate),
-		"no_timestamps":   fmt.Sprintf("%t", req.NoTimestamps),
+		"translate":       strconv.FormatBool(req.Translate),
+		"no_timestamps":   strconv.FormatBool(req.NoTimestamps),
 	}
 
 	if req.BeamSize >= 0 {
-		params["beam_size"] = fmt.Sprintf("%d", req.BeamSize)
+		params["beam_size"] = strconv.Itoa(req.BeamSize)
 	}
 
 	if req.BestOf > 0 {
-		params["best_of"] = fmt.Sprintf("%d", req.BestOf)
+		params["best_of"] = strconv.Itoa(req.BestOf)
 	}
 
 	if req.Prompt != "" {
@@ -231,7 +236,7 @@ func (b *Backend) addTranscriptionParams(w *multipart.Writer, req *Transcription
 
 	for key, value := range params {
 		if err := w.WriteField(key, value); err != nil {
-			return fmt.Errorf("failed to write field %s: %w", key, err)
+			return fmt.Errorf("manager: failed to write field %s: %w", key, err)
 		}
 	}
 

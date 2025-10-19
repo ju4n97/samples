@@ -5,9 +5,10 @@ import (
 	"io"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ekisa-team/syn4pse/env"
 	"github.com/ekisa-team/syn4pse/logger"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewLogger(t *testing.T) {

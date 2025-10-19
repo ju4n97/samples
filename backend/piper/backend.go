@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,20 +50,24 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	// Piper outputs to a file, so a temp file must be used, then read it back.
 	// this is a limitation of piper's CLI interface.
 	outputFile := filepath.Join(b.tempDir, fmt.Sprintf("piper_%d.wav", time.Now().UnixNano()))
-	defer os.Remove(outputFile)
+	defer func() {
+		if err := os.Remove(outputFile); err != nil {
+			slog.Error("Failed to remove temporary file", "error", err)
+		}
+	}()
 
 	args := b.buildArgs(req, outputFile)
 
 	// Piper reads text from stdin
 	stdout, stderr, err := b.executor.Execute(ctx, args, req.Input)
 	if err != nil {
-		return nil, fmt.Errorf("execution failed: %w\nstderr: %s", err, stderr)
+		return nil, fmt.Errorf("manager: execution failed: %w\nstderr: %s", err, stderr)
 	}
 
 	// Read generated audio file
 	audioData, err := os.ReadFile(outputFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read audio file: %w", err)
+		return nil, fmt.Errorf("manager: failed to read audio file: %w", err)
 	}
 
 	return &backend.Response{
@@ -94,7 +100,7 @@ func (b *Backend) buildArgs(req *backend.Request, outputFile string) []string {
 
 	// Speaker ID
 	if v, ok := p["speaker_id"].(int); ok {
-		args = append(args, "--speaker", fmt.Sprintf("%d", v))
+		args = append(args, "--speaker", strconv.Itoa(v))
 	}
 
 	// Length scale (speed)

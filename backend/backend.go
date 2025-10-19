@@ -28,14 +28,9 @@ type StreamingBackend interface {
 
 // Request encapsulates all parameters for an inference call.
 type Request struct {
-	// ModelPath is the path to the model file.
-	ModelPath string
-
-	// Input is the raw input data (text, audio bytes, image bytes, etc.).
-	Input io.Reader
-
-	// Parameters contains backend-specific inference parameters.
+	Input      io.Reader
 	Parameters map[string]any
+	ModelPath  string
 }
 
 // Response contains the result of an inference operation.
@@ -49,22 +44,17 @@ type Response struct {
 
 // ResponseMetadata contains metadata about the response.
 type ResponseMetadata struct {
-	Provider        string         `json:"provider"`                   // Backend identifier (e.g. llama.cpp, whisper.cpp, diffusers)
-	Model           string         `json:"model"`                      // Model name or path
-	Timestamp       time.Time      `json:"timestamp"`                  // When inference completed
-	DurationSeconds float64        `json:"inference_time_seconds"`     // Total inference time in seconds
-	OutputSizeBytes int64          `json:"output_size_bytes"`          // Size of output payload in bytes
-	BackendSpecific map[string]any `json:"backend_specific,omitempty"` // For non-generic details
+	Timestamp       time.Time      `json:"timestamp"`
+	BackendSpecific map[string]any `json:"backend_specific,omitempty"`
+	Provider        string         `json:"provider"`
+	Model           string         `json:"model"`
+	DurationSeconds float64        `json:"inference_time_seconds"`
+	OutputSizeBytes int64          `json:"output_size_bytes"`
 }
 
 // StreamChunk represents a single chunk in a streaming response.
 type StreamChunk struct {
-	// Data is the chunk content.
-	Data []byte
-
-	// Done indicates if this is the final chunk.
-	Done bool
-
-	// Error if something went wrong.
 	Error error
+	Data  []byte
+	Done  bool
 }

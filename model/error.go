@@ -2,6 +2,4 @@ package model
 
 import "errors"
 
-var (
-	ErrModelNotFound = errors.New("model not found in registry")
-)
+var ErrModelNotFound = errors.New("model not found in registry")

@@ -19,30 +19,29 @@ type ServerManager struct {
 
 // ServerProcess represents a server running process.
 type ServerProcess struct {
-	cmd     *exec.Cmd
-	baseURL string
-	cancel  context.CancelFunc
+	cmd    *exec.Cmd
+	cancel context.CancelFunc
 }
 
-// ServerConfig defines how to start and check a backend server
+// ServerConfig defines how to start and check a backend server.
 type ServerConfig struct {
-	Name         string            // Unique identifier, e.g. "llama", "whisper"
-	BinPath      string            // Path to the binary
-	Args         []string          // Arguments passed to the binary
-	Port         int               // Port to bind the server
-	HealthPath   string            // Health endpoint path (e.g. "/health" or "/ready")
-	Env          map[string]string // Optional environment variables
-	ReadyTimeout time.Duration     // How long to wait for readiness
+	Env          map[string]string
+	Name         string
+	BinPath      string
+	HealthPath   string
+	Args         []string
+	Port         int
+	ReadyTimeout time.Duration
 }
 
-// NewServerManager initializes a ServerManager
+// NewServerManager initializes a ServerManager.
 func NewServerManager() *ServerManager {
 	return &ServerManager{
 		servers: make(map[string]*ServerProcess),
 	}
 }
 
-// StartServer starts a backend server based on a generic configuration
+// StartServer starts a backend server based on a generic configuration.
 func (sm *ServerManager) StartServer(cfg ServerConfig) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -53,7 +52,7 @@ func (sm *ServerManager) StartServer(cfg ServerConfig) error {
 	}
 
 	if info, err := os.Stat(cfg.BinPath); err != nil || info.IsDir() {
-		return fmt.Errorf("failed to start %s server: %w", cfg.Name, err)
+		return fmt.Errorf("manager: failed to start %s server: %w", cfg.Name, err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -70,7 +69,7 @@ func (sm *ServerManager) StartServer(cfg ServerConfig) error {
 
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return fmt.Errorf("failed to start %s server: %w", cfg.Name, err)
+		return fmt.Errorf("manager: failed to start %s server: %w", cfg.Name, err)
 	}
 
 	baseURL := fmt.Sprintf("http://localhost:%d", cfg.Port)
@@ -85,16 +84,17 @@ func (sm *ServerManager) StartServer(cfg ServerConfig) error {
 		timeout = 10 * time.Second
 	}
 
-	if err := sm.waitForServer(baseURL+healthPath, timeout); err != nil {
+	if err := sm.waitForServer(ctx, baseURL+healthPath, timeout); err != nil {
 		cancel()
-		cmd.Process.Kill()
-		return fmt.Errorf("%s server did not become ready: %w", cfg.Name, err)
+		if err := cmd.Process.Kill(); err != nil {
+			slog.Error("Failed to kill server process", "error", err)
+		}
+		return fmt.Errorf("manager: %s server did not become ready: %w", cfg.Name, err)
 	}
 
 	sm.servers[key] = &ServerProcess{
-		cmd:     cmd,
-		baseURL: baseURL,
-		cancel:  cancel,
+		cmd:    cmd,
+		cancel: cancel,
 	}
 
 	slog.Info("Server started", "name", cfg.Name, "port", cfg.Port)
@@ -109,7 +109,10 @@ func (sm *ServerManager) StopServer(name string, port int) error {
 	key := fmt.Sprintf("%s-%d", name, port)
 	if srv, exists := sm.servers[key]; exists {
 		srv.cancel()
-		srv.cmd.Process.Kill()
+		if err := srv.cmd.Process.Kill(); err != nil {
+			slog.Error("Failed to kill server process", "error", err)
+		}
+
 		delete(sm.servers, key)
 		slog.Info("Server stopped", "name", name, "port", port)
 		return nil
@@ -118,14 +121,16 @@ func (sm *ServerManager) StopServer(name string, port int) error {
 	}
 }
 
-// StopAll terminates all running servers
+// StopAll terminates all running servers.
 func (sm *ServerManager) StopAll() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
 	for _, srv := range sm.servers {
 		srv.cancel()
-		srv.cmd.Process.Kill()
+		if err := srv.cmd.Process.Kill(); err != nil {
+			slog.Error("Failed to kill server process", "error", err)
+		}
 	}
 	sm.servers = make(map[string]*ServerProcess)
 
@@ -133,18 +138,31 @@ func (sm *ServerManager) StopAll() {
 }
 
 // waitForServer waits for a server to be ready.
-func (sm *ServerManager) waitForServer(url string, timeout time.Duration) error {
+func (sm *ServerManager) waitForServer(ctx context.Context, url string, timeout time.Duration) error {
 	client := &http.Client{Timeout: 1 * time.Second}
 	deadline := time.Now().Add(timeout)
 
 	for time.Now().Before(deadline) {
-		resp, err := client.Get(url)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+
+		resp, err := client.Do(req)
 		if err == nil && resp.StatusCode == http.StatusOK {
-			resp.Body.Close()
+			if err = resp.Body.Close(); err != nil {
+				return fmt.Errorf("failed to close response body: %w", err)
+			}
 			return nil
 		}
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				slog.Error("failed to close response body", "error", err)
+			}
+		}()
+
 		time.Sleep(1 * time.Second)
 	}
 
-	return fmt.Errorf("server failed to respond at %s within %v", url, timeout)
+	return fmt.Errorf("manager: server failed to respond at %s within %v", url, timeout)
 }

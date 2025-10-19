@@ -13,7 +13,6 @@ import (
 
 type MockBackend struct {
 	mock.Mock
-	name string
 }
 
 func (m *MockBackend) Provider() string {
@@ -53,7 +52,7 @@ func TestRegistry_RegisterAndGet(t *testing.T) {
 	mockBackend := new(MockBackend)
 	mockBackend.On("Provider").Return("test-backend")
 
-	reg.Register(mockBackend)
+	_ = reg.Register(mockBackend)
 
 	got, ok := reg.Get("test-backend")
 	assert.True(t, ok)
@@ -72,7 +71,7 @@ func TestRegistry_GetStreaming(t *testing.T) {
 	// Non-streaming backend
 	mockBackend := new(MockBackend)
 	mockBackend.On("Provider").Return("basic")
-	reg.Register(mockBackend)
+	_ = reg.Register(mockBackend)
 
 	sb, ok := reg.GetStreaming("basic")
 	assert.False(t, ok)
@@ -81,7 +80,7 @@ func TestRegistry_GetStreaming(t *testing.T) {
 	// Streaming backend
 	mockStream := new(MockStreamingBackend)
 	mockStream.On("Provider").Return("streamer")
-	reg.Register(mockStream)
+	_ = reg.Register(mockStream)
 
 	sb, ok = reg.GetStreaming("streamer")
 	assert.True(t, ok)
@@ -103,8 +102,8 @@ func TestRegistry_Close(t *testing.T) {
 	b1.On("Close").Return(nil).Once()
 	b2.On("Close").Return(nil).Once()
 
-	reg.Register(b1)
-	reg.Register(b2)
+	_ = reg.Register(b1)
+	_ = reg.Register(b2)
 
 	err := reg.Close()
 	assert.NoError(t, err)
@@ -125,8 +124,8 @@ func TestRegistry_CloseErrorPropagation(t *testing.T) {
 	b1.On("Close").Return(errors.New("close failed")).Once()
 	b2.On("Close").Return(nil).Maybe()
 
-	reg.Register(b1)
-	reg.Register(b2)
+	_ = reg.Register(b1)
+	_ = reg.Register(b2)
 
 	err := reg.Close()
 	assert.EqualError(t, err, "close failed")

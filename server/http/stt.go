@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/backend/whisper"
 	"github.com/ekisa-team/syn4pse/model"
@@ -17,16 +18,16 @@ import (
 
 type (
 	TranscribeResponseDTO struct {
-		Text     string                    `json:"text"`
 		Metadata *backend.ResponseMetadata `json:"metadata,omitempty"`
+		Text     string                    `json:"text"`
 	}
 )
 
 type (
 	TranscribeInput struct {
 		RawBody huma.MultipartFormFiles[struct {
-			AudioFile  huma.FormFile `form:"file" contentType:"audio/*,application/octet-stream" required:"true"`
-			ModelID    string        `form:"model_id" minLength:"1" required:"true"`
+			AudioFile  huma.FormFile `contentType:"audio/*,application/octet-stream" form:"file"   required:"true"`
+			ModelID    string        `form:"model_id"                                minLength:"1" required:"true"`
 			Parameters string        `form:"parameters"` // JSON-encoded optional parameters
 		}]
 	}
@@ -42,8 +43,8 @@ type STTHandler struct {
 }
 
 // NewSTTHandler creates a new STTHandler instance.
-func NewSTTHandler(api huma.API, service *service.STT) *STTHandler {
-	h := &STTHandler{service: service}
+func NewSTTHandler(api huma.API, svc *service.STT) *STTHandler {
+	h := &STTHandler{service: svc}
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "transcribe",

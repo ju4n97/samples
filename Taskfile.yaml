@@ -84,7 +84,7 @@ tasks:
   lint:
     desc: Lint code
     cmds:
-      - golangci-lint lint ./...
+      - golangci-lint run ./... --fix
 
   fmt:
     desc: Format code

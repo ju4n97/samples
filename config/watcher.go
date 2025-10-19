@@ -12,16 +12,16 @@ import (
 
 // Watcher watches for configuration changes.
 type Watcher struct {
-	path       string
-	schemaPath string
 	onReload   func(*Config, error)
 	current    *Config
+	path       string
+	schemaPath string
 	mu         sync.RWMutex
 	reloads    atomic.Uint32
 }
 
 // NewWatcher creates a new config watcher.
-func NewWatcher(path string, schemaPath string, onReload func(*Config, error)) (*Watcher, error) {
+func NewWatcher(path, schemaPath string, onReload func(*Config, error)) (*Watcher, error) {
 	watcher := &Watcher{
 		path:       path,
 		schemaPath: schemaPath,
@@ -30,7 +30,7 @@ func NewWatcher(path string, schemaPath string, onReload func(*Config, error)) (
 
 	cfg, err := LoadAndValidate(path, schemaPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load initial config: %w", err)
+		return nil, fmt.Errorf("manager: watcher: failed to load initial config: %w", err)
 	}
 	watcher.current = cfg
 
@@ -46,7 +46,11 @@ func (cw *Watcher) watch() {
 		slog.Error("Failed to create file watcher", "error", err)
 		return
 	}
-	defer watcher.Close()
+	defer func() {
+		if err := watcher.Close(); err != nil {
+			slog.Error("Failed to close watcher", "error", err)
+		}
+	}()
 
 	if err := watcher.Add(cw.path); err != nil {
 		slog.Error("Failed to watch config file", "path", cw.path, "error", err)

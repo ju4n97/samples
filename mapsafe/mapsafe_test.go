@@ -3,17 +3,18 @@ package mapsafe_test
 import (
 	"testing"
 
-	"github.com/ekisa-team/syn4pse/mapsafe"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ekisa-team/syn4pse/mapsafe"
 )
 
 func TestGet(t *testing.T) {
 	tests := []struct {
-		name         string
-		m            map[string]any
-		key          string
 		defaultValue any
 		expected     any
+		m            map[string]any
+		name         string
+		key          string
 	}{
 		{
 			name:         "existing int",

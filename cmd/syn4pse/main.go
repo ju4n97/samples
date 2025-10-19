@@ -15,6 +15,14 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httplog/v3"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/backend/llama"
 	"github.com/ekisa-team/syn4pse/backend/piper"
@@ -27,13 +35,6 @@ import (
 	syn4pse_grpc "github.com/ekisa-team/syn4pse/server/grpc"
 	syn4pse_http "github.com/ekisa-team/syn4pse/server/http"
 	"github.com/ekisa-team/syn4pse/service"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	"github.com/go-chi/httplog/v3"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -83,7 +84,11 @@ func main() {
 	slog.Info("Config loaded successfully", "config", *flagConfigPath, "schema", *flagSchemaPath)
 
 	backends := backend.NewRegistry()
-	defer backends.Close()
+	defer func() {
+		if err := backends.Close(); err != nil {
+			slog.Error("Failed to close backends", "error", err)
+		}
+	}()
 
 	serverManager := backend.NewServerManager()
 	defer serverManager.StopAll()
@@ -92,19 +97,25 @@ func main() {
 	if err != nil {
 		slog.Error("Failed to create Llama backend", "error", err)
 	}
-	backends.Register(backendLlama)
+	if err := backends.Register(backendLlama); err != nil {
+		slog.Error("Failed to register Llama backend", "error", err)
+	}
 
 	backendWhisper, err := whisper.NewBackend("./bin/whisper-server-cuda", serverManager)
 	if err != nil {
 		slog.Error("Failed to create Whisper backend", "error", err)
 	}
-	backends.Register(backendWhisper)
+	if err := backends.Register(backendWhisper); err != nil {
+		slog.Error("Failed to register Whisper backend", "error", err)
+	}
 
 	backendPiper, err := piper.NewBackend("./bin/piper-cpu/piper")
 	if err != nil {
 		slog.Error("Failed to create Piper backend", "error", err)
 	}
-	backends.Register(backendPiper)
+	if err := backends.Register(backendPiper); err != nil {
+		slog.Error("Failed to register Piper backend", "error", err)
+	}
 
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -151,7 +162,7 @@ func runHTTPServer(ctx context.Context, server *http.Server) error {
 
 	slog.Info("Server starting",
 		"protocol", "HTTP",
-		"address", fmt.Sprintf("http://localhost%s", server.Addr),
+		"address", "http://localhost"+server.Addr,
 		"docs_v1", fmt.Sprintf("http://localhost%s/v1/docs", server.Addr),
 	)
 
@@ -167,9 +178,11 @@ func runHTTPServer(ctx context.Context, server *http.Server) error {
 // runGRPCServer runs the gRPC server.
 func runGRPCServer(ctx context.Context, server *grpc.Server, port int) error {
 	addr := fmt.Sprintf(":%d", port)
-	listener, err := net.Listen("tcp", addr)
+
+	var lc net.ListenConfig
+	listener, err := lc.Listen(ctx, "tcp", addr)
 	if err != nil {
-		return fmt.Errorf("failed to listen on %s: %w", addr, err)
+		return fmt.Errorf("manager: failed to listen on %s: %w", addr, err)
 	}
 
 	// Graceful shutdown
@@ -181,7 +194,7 @@ func runGRPCServer(ctx context.Context, server *grpc.Server, port int) error {
 
 	slog.Info("Server starting",
 		"protocol", "gRPC",
-		"address", fmt.Sprintf("grpc://localhost%s", addr),
+		"address", "grpc://localhost"+addr,
 	)
 
 	if err := server.Serve(listener); err != nil {

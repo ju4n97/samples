@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"log/slog"
 
-	"github.com/ekisa-team/syn4pse/backend"
-	"github.com/ekisa-team/syn4pse/model"
-	inferencev1 "github.com/ekisa-team/syn4pse/pb/inference/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/ekisa-team/syn4pse/backend"
+	"github.com/ekisa-team/syn4pse/model"
+	inferencev1 "github.com/ekisa-team/syn4pse/pb/inference/v1"
 )
 
 // InferenceServer implements inferencev1.InferenceServiceServer.
@@ -150,13 +151,13 @@ func (s *InferenceServer) InferStream(stream inferencev1.InferenceService_InferS
 // validateInferenceRequest validates the inference request.
 func validateInferenceRequest(req *inferencev1.InferenceRequest) error {
 	if req.Provider == "" {
-		return fmt.Errorf("provider is required")
+		return errors.New("provider is required")
 	}
 	if req.ModelId == "" {
-		return fmt.Errorf("model_id is required")
+		return errors.New("model_id is required")
 	}
 	if len(req.Input) == 0 {
-		return fmt.Errorf("input is required")
+		return errors.New("input is required")
 	}
 	return nil
 }
@@ -202,7 +203,10 @@ func parseParameters(params *structpb.Struct) (map[string]any, error) {
 
 	jsonData, _ := params.MarshalJSON()
 	var native map[string]any
-	json.Unmarshal(jsonData, &native)
+	err := json.Unmarshal(jsonData, &native)
+	if err != nil {
+		return nil, err
+	}
 
 	return native, nil
 }
@@ -213,17 +217,15 @@ func mapBackendError(err error) error {
 		return nil
 	}
 
-	switch err {
-	case backend.ErrBackendNotFound:
+	switch {
+	case errors.Is(err, backend.ErrBackendNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case model.ErrModelNotFound:
+	case errors.Is(err, model.ErrModelNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
-		// Check if it's already a gRPC status error
 		if _, ok := status.FromError(err); ok {
 			return err
 		}
-		// Default to Unknown for other errors
 		return status.Errorf(codes.Unknown, "backend error: %v", err)
 	}
 }

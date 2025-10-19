@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/ekisa-team/syn4pse/backend"
@@ -20,9 +22,9 @@ const (
 
 // Backend implements backend.Backend for llama.cpp.
 type Backend struct {
-	binPath       string
 	serverManager *backend.ServerManager
 	client        *http.Client
+	binPath       string
 	port          int
 }
 
@@ -47,30 +49,30 @@ type ChatCompletionRequest struct {
 
 // ChatCompletionResponse is a response from the llama-server API.
 type ChatCompletionResponse struct {
+	Timings           map[string]any `json:"timings,omitempty"`
 	ID                string         `json:"id,omitempty"`
 	Object            string         `json:"object,omitempty"`
-	Created           int64          `json:"created,omitempty"`
 	Model             string         `json:"model,omitempty"`
 	SystemFingerprint string         `json:"system_fingerprint,omitempty"`
 	Choices           []Choice       `json:"choices"`
 	Usage             Usage          `json:"usage"`
-	Timings           map[string]any `json:"timings,omitempty"`
+	Created           int64          `json:"created,omitempty"`
 }
 
-// Choice represents a single choice in a response
+// Choice represents a single choice in a response.
 type Choice struct {
-	Index        int     `json:"index"`
-	FinishReason string  `json:"finish_reason"`
 	Message      Message `json:"message"`
+	FinishReason string  `json:"finish_reason"`
+	Index        int     `json:"index"`
 }
 
-// Message represents a single message in a chat conversation
+// Message represents a single message in a chat conversation.
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// Usage represents the usage information of a response
+// Usage represents the usage information of a response.
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
@@ -104,7 +106,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	args := []string{
 		"--model", req.ModelPath,
 		"--host", "127.0.0.1",
-		"--port", fmt.Sprintf("%d", b.port),
+		"--port", strconv.Itoa(b.port),
 	}
 
 	if err := b.serverManager.StartServer(backend.ServerConfig{
@@ -114,28 +116,28 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 		Port:       b.port,
 		HealthPath: "/health",
 	}); err != nil {
-		return nil, fmt.Errorf("failed to start server: %w", err)
+		return nil, fmt.Errorf("manager: failed to start server: %w", err)
 	}
 
 	prompt, err := io.ReadAll(req.Input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read input: %w", err)
+		return nil, fmt.Errorf("manager: failed to read input: %w", err)
 	}
 
 	completionReq := b.buildChatCompletionRequest(req, string(prompt))
 
 	jsonData, err := json.Marshal(completionReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, fmt.Errorf("manager: failed to marshal request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx,
-		"POST",
+		http.MethodPost,
 		fmt.Sprintf("http://localhost:%d/chat/completions", b.port),
 		bytes.NewReader(jsonData),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("manager: failed to create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
@@ -143,24 +145,28 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 
 	resp, err := b.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("manager: failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	elapsed := time.Since(start).Seconds()
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read response body: %w", err)
+			return nil, fmt.Errorf("manager: failed to read response body: %w", err)
 		}
 
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, body)
+		return nil, fmt.Errorf("manager: request failed with status code %d: %s", resp.StatusCode, body)
 	}
 
 	var completionResp ChatCompletionResponse
 	if err := json.NewDecoder(resp.Body).Decode(&completionResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, fmt.Errorf("manager: failed to decode response: %w", err)
 	}
 
 	content := ""

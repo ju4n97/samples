@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/backend/piper"
 	"github.com/ekisa-team/syn4pse/model"
@@ -17,9 +18,9 @@ import (
 
 type (
 	SynthesizeRequestDTO struct {
-		ModelID    string         `json:"model_id" minLength:"1"`
-		Text       string         `json:"text" minLength:"1" maxLength:"4096"`
 		Parameters map[string]any `json:"parameters,omitempty"`
+		ModelID    string         `json:"model_id"             minLength:"1"`
+		Text       string         `json:"text"                 maxLength:"4096" minLength:"1"`
 	}
 )
 
@@ -35,8 +36,8 @@ type TTSHandler struct {
 }
 
 // NewTTSHandler creates a new TTSHandler instance.
-func NewTTSHandler(api huma.API, service *service.TTS) *TTSHandler {
-	h := &TTSHandler{service: service}
+func NewTTSHandler(api huma.API, svc *service.TTS) *TTSHandler {
+	h := &TTSHandler{service: svc}
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "synthesize",

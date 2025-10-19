@@ -9,6 +9,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/sse"
+
 	"github.com/ekisa-team/syn4pse/backend"
 	"github.com/ekisa-team/syn4pse/backend/llama"
 	"github.com/ekisa-team/syn4pse/model"
@@ -17,14 +18,14 @@ import (
 
 type (
 	GenerateRequestDTO struct {
-		ModelID    string         `json:"model_id" minLength:"1"`
-		Prompt     string         `json:"prompt" minLength:"1" maxLength:"4096"`
 		Parameters map[string]any `json:"parameters,omitempty"`
+		ModelID    string         `json:"model_id"             minLength:"1"`
+		Prompt     string         `json:"prompt"               maxLength:"4096" minLength:"1"`
 	}
 
 	GenerateResponseDTO struct {
-		Text     string                    `json:"text"`
 		Metadata *backend.ResponseMetadata `json:"metadata,omitempty"`
+		Text     string                    `json:"text"`
 	}
 )
 
@@ -52,8 +53,8 @@ type LLMHandler struct {
 }
 
 // NewLLMHandler creates a new LLMHandler instance.
-func NewLLMHandler(api huma.API, service *service.LLM) *LLMHandler {
-	h := &LLMHandler{service: service}
+func NewLLMHandler(api huma.API, svc *service.LLM) *LLMHandler {
+	h := &LLMHandler{service: svc}
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "generate",

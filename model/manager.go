@@ -33,34 +33,34 @@ func (m *Manager) Registry() *Registry {
 }
 
 // LoadModelsFromConfig loads models from the config and updates the registry.
-func (m *Manager) LoadModelsFromConfig(ctx context.Context, config *config.Config) error {
+func (m *Manager) LoadModelsFromConfig(ctx context.Context, cfg *config.Config) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.registry = NewRegistry(config)
+	m.registry = NewRegistry()
 
 	assignedModels := make(map[string]bool)
-	for _, model := range config.Services.LLM.Models {
+	for _, model := range cfg.Services.LLM.Models {
 		assignedModels[model] = true
 	}
-	for _, model := range config.Services.STT.Models {
+	for _, model := range cfg.Services.STT.Models {
 		assignedModels[model] = true
 	}
-	for _, model := range config.Services.TTS.Models {
+	for _, model := range cfg.Services.TTS.Models {
 		assignedModels[model] = true
 	}
-	for _, model := range config.Services.NLU.Models {
+	for _, model := range cfg.Services.NLU.Models {
 		assignedModels[model] = true
 	}
 
-	modelsPath := resolveModelsPath(config)
+	modelsPath := resolveModelsPath(cfg)
 	if err := source.EnsureModelsDirectory(modelsPath); err != nil {
-		return fmt.Errorf("failed to prepare models directory %s: %w", modelsPath, err)
+		return fmt.Errorf("manager: failed to prepare models directory %s: %w", modelsPath, err)
 	}
 
 	loadedKeys := make(map[string]bool)
 	for modelID := range assignedModels {
-		modelConfig, ok := config.Models[modelID]
+		modelConfig, ok := cfg.Models[modelID]
 		if !ok {
 			slog.Warn("Model not found in config", "model_id", modelID)
 			continue
@@ -68,17 +68,17 @@ func (m *Manager) LoadModelsFromConfig(ctx context.Context, config *config.Confi
 
 		modelSource, err := modelConfig.GetSource()
 		if err != nil {
-			return fmt.Errorf("failed to get model source for %s: %w", modelID, err)
+			return fmt.Errorf("manager: failed to get model source for %s: %w", modelID, err)
 		}
 
 		downloader, err := source.GetDownloader(ctx, modelSource.Type())
 		if err != nil {
-			return fmt.Errorf("failed to get downloader for %s: %w", modelID, err)
+			return fmt.Errorf("manager: failed to get downloader for %s: %w", modelID, err)
 		}
 
-		downloadPath, _, err := downloader.Download(ctx, &modelConfig, modelsPath)
+		downloadPath, err := downloader.Download(ctx, &modelConfig, modelsPath)
 		if err != nil {
-			return fmt.Errorf("failed to download model %s into %s: %w", modelID, modelsPath, err)
+			return fmt.Errorf("manager: failed to download model %s into %s: %w", modelID, modelsPath, err)
 		}
 
 		instance := NewModelInstance(&modelConfig, modelID, downloadPath)
