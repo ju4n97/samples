@@ -1,4 +1,4 @@
-module github.com/ekisa-team/syn4pse
+module github.com/ju4n97/syn4pse
 
 go 1.25.3
 

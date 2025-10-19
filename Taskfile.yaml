@@ -41,6 +41,11 @@ tasks:
   # SETUP & DEPENDENCIES
   # =============================================================================
 
+  prune:
+    desc: Prune workspace
+    cmds:
+      - ./scripts/prune.sh
+
   install:
     desc: Install dependencies and dev tools
     cmds:
@@ -104,11 +109,11 @@ tasks:
     desc: Generate Go code from protobuf definitions
     cmds:
       - |
-        mkdir -p pb
+        mkdir -p internal/pb
         protoc \
           -I proto \
-          --go_out=pb \
-          --go-grpc_out=pb \
+          --go_out=internal/pb \
+          --go-grpc_out=internal/pb \
           $(find proto -name '*.proto')
       - go mod tidy
 

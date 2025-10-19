@@ -9,104 +9,56 @@
 </pre>
 </div>
 
-<br>
-
-<div align="center">
-<a href="https://go.dev" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Go-1.25%2B-000000?logo=go&logoColor=white&style=flat&color=000000" alt="Go" /></a>
-<a href="https://www.docker.com" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Docker-000000?logo=docker&logoColor=white&style=flat&color=000000" alt="Docker" /></a>
-
-<br>
-<br>
-
-<table>
-   <tbody>
-      <tr>
-         <td>
-            <a href="https://syn4pse.pages.dev">📚 Documentación</a>
-         </td>
-         <td>
-            <a href="https://github.com/ekisa-team/kivox">🤖 KIVOX</a>
-         </td>
-      </tr>
-   </tbody>
-</table>
-</div>
+> [!IMPORTANT]
+> Project in development, with scope limited to my specific needs for the moment.
 
 # SYN4PSE
 
-SYN4PSE es infraestructura local descentralizada para la ejecución de múltiples tipos de modelos de inteligencia artificial (LLM, STT, TTS, visión y embeddings) a través de una API unificada.  
-Funciona como un servidor autónomo que integra distintos motores de inferencia optimizados, permitiendo a aplicaciones y agentes interactuar con modelos locales sin depender de servicios externos ni nubes centralizadas.
+SYN4PSE provides a local runtime for running multiple AI models through a unified HTTP and gRPC API.
 
-## Concepto central
-
-El objetivo de SYN4PSE es simplificar el acceso local a modelos de IA de manera consistente mediante una interfaz común (HTTP y gRPC).  
-Todo el procesamiento ocurre en el mismo servidor donde se ejecuta SYN4PSE, garantizando privacidad, baja latencia y control total sobre los recursos.
-
-### Características
-
-- Descarga y carga bajo demanda desde repositorios como Hugging Face.
-- Interfaz consistente para LLM, STT, TTS, embeddings y visión.
-- Soporte para procesamiento por lotes y streaming.
-- Sin dependencia de infraestructura remota ni coordinación entre nodos.
-
-## Ecosistema
-
-SYN4PSE es la capa de infraestructura sobre la que se construyen sistemas de IA locales más complejos.
-El primer proyecto basado en SYN4PSE es [KIVOX](https://github.com/ekisa-team/kivox): una plataforma para crear agentes conversacionales congnitivos que integran voz, texto y visión.
-
-```mermaid
-flowchart LR
-    A[SYN4PSE<br>Infraestructura de modelos] --> B[KIVOX<br>Agentes conversacionales]
-    B --> C[Aplicaciones y experiencias de usuario]
-```
-
-## Arquitectura (desde octubre de 2025)
+## Architecture (as of October 2025)
 
 ```mermaid
 flowchart TD
-    subgraph CLIENTS[Interfaces externas / Clientes]
+    subgraph CLIENTS[External interfaces / Clients]
         A1[CLI / SDK / API]
-        A2[Aplicaciones externas]
-        A3[Agentes o servicios de terceros]
+        A2[External applications]
+        A3[Third-Party agents or services]
     end
 
-    subgraph NODE[Nodo SYN4PSE]
+    subgraph SYN4PSE[SYN4PSE]
         direction TB
 
-        subgraph CONTROL[Capa de control]
-            B1[Registro de modelos / Estado]
-            B2[Servidor de gRPC y HTTP]
+        subgraph CONTROL[Control layer]
+            B1[Model registry / State]
+            B2[gRPC and HTTP Server]
         end
 
-        subgraph BACKENDS[Backends de inferencia]
-            C1[LLM: Llama, Mistral, etc.]
-            C2[STT: Whisper, Vosk, etc.]
-            C3[TTS: Kokoro, Piper, etc.]
-            C4[Embeddings]
-            C5[Visión]
+        subgraph BACKENDS[Inference backends]
+            C1[LLM: Qwen, Mistral, etc.]
+            C2[NLU: Rasa, spaCy etc.]
+            C3[STT: Whisper, Vosk, etc.]
+            C4[TTS: Kokoro, Piper, etc.]
+            C5[Embeddings]
+            C6[Vision]
         end
 
-        subgraph STORAGE[Almacenamiento y configuración]
-            E1[Cache de modelos]
+        subgraph STORAGE[Storage and configuration]
+            E1[Model cache]
             E2[Metadata / Config]
         end
     end
 
-    A1 -->|Inferencia / Gestión| B2
+    A1 -->|Inference / Management| B2
     A2 -->|Streaming / Batch| B2
-    A3 -->|Control local| B2
+    A3 -->|Local control| B2
     B2 --> B1
     B2 --> BACKENDS
     BACKENDS --> B2
     B1 --> STORAGE
 ```
 
-## Backends de inferencia
-
-SYN4PSE delega la inferencia a motores optimizados en C/C++, como [llama.cpp](https://github.com/ggml-org/llama.cpp) y [whisper.cpp](https://github.com/ggerganov/whisper.cpp).  
-Estos se compilan como binarios independientes para distintas plataformas (CPU, CUDA, Vulkan, Metal) mediante [CMake](https://cmake.org/) y se invocan localmente desde SYN4PSE server mediante HTTP o gRPC, y en tiempo real a través de WebRTC para flujos continuos de audio o texto.
-
-### Compilación de backends
+### Build backends
 
 ```bash
 # CPU
@@ -114,128 +66,120 @@ task build-third-party
 
 # CUDA
 task build-third-party-cuda
-
-# Vulkan
-task build-third-party-vulkan
-
-# Metal
-task build-third-party-metal
 ```
 
-## Backends soportados
+## Supported Backends
 
 ### LLM
 
 - **[llama.cpp](https://github.com/ggml-org/llama.cpp)**
-  - Fuente: [`backend/llama`](backend/llama)
-  - Aceleración: CPU, CUDA 11/12
-  - Licencia: MIT
-  - Estado: 🟢 Soportado
+  - Source: [`backend/llama`](backend/llama)
+  - Acceleration: CPU, CUDA 11/12
+  - License: MIT
+  - Status: 🟢 Supported
 
 ---
 
 ### STT
 
 - **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**
-  - Fuente: [`backend/whisper`](backend/whisper)
-  - Aceleración: CPU, CUDA 12
-  - Licencia: MIT
-  - Estado: 🟢 Soportado
+
+  - Source: [`backend/whisper`](backend/whisper)
+  - Acceleration: CPU, CUDA 12
+  - License: MIT
+  - Status: 🟢 Supported
 
 - **[Vosk](https://github.com/alphacep/vosk-api)**
-  - Licencia: Apache 2.0
-  - Estado: 🔴 Planeado
+  - License: Apache 2.0
+  - Status: 🔴 Planned
+
+---
+
+### NLU
+
+- **[Rasa](https://github.com/RasaHQ/rasa)**
+  - License: Apache 2.0
+  - Status: 🔴 Planned
 
 ---
 
 ### VAD
 
 - **[Silero VAD](https://github.com/snakers4/silero-vad)**
-  - Licencia: MIT
-  - Estado: 🔴 Planeado
+  - License: MIT
+  - Status: 🔴 Planned
 
 ---
 
 ### TTS
 
 - **[Piper](https://github.com/rhasspy/piper)**
-  - Fuente: [`backend/piper`](backend/piper)
-  - Aceleración: CPU
-  - Licencia: MIT
-  - Estado: 🟡 Experimental
+
+  - Source: [`backend/piper`](backend/piper)
+  - Acceleration: CPU
+  - License: MIT
+  - Status: 🟡 Experimental
 
 - **[Coqui TTS](https://github.com/coqui-ai/TTS)**
-  - Licencia: MPL 2.0
-  - Estado: 🔴 Planeado
+  - License: MPL 2.0
+  - Status: 🔴 Planned
 
 ---
 
-### Visión
+### Vision
 
 - **[ONNX Runtime + OpenCV](https://github.com/microsoft/onnxruntime)**
-  - Licencia: MIT
-  - Estado: 🔴 Planeado
+
+  - License: MIT
+  - Status: 🔴 Planned
 
 - **[Ultralytics YOLO](https://github.com/ultralytics/ultralytics)**
-  - Licencia: AGPL-3.0
-  - Estado: 🔴 Planeado
+  - License: AGPL-3.0
+  - Status: 🔴 Planned
 
 ---
 
 ### Embeddings
 
 - **[sentence-transformers](https://github.com/UKPLab/sentence-transformers)**
-  - Licencia: Apache 2.0
-  - Estado: 🔴 Planeado
+
+  - License: Apache 2.0
+  - Status: 🔴 Planned
 
 - **[nomic-embed-text](https://github.com/nomic-ai/nomic)**
-  - Licencia: Apache 2.0
-  - Estado: 🔴 Planeado
+  - License: Apache 2.0
+  - Status: 🔴 Planned
 
 ---
 
-**Leyenda de estado:**
+**Status legend:**
 
-- 🟢 Soportado: probado, estable y recomendado para uso en producción.
-- 🟡 Experimental: funcional, pero sujeto a cambios, errores o limitaciones.
-- 🟠 Desarrollo: integración activa, con funcionalidades aún en construcción.
-- 🔴 Planeado: previsto para implementación futura (PRs bienvenidos).
+- 🟢 Supported: tested, stable, and recommended for production.
+- 🟡 Experimental: functional but subject to changes, bugs, or limitations.
+- 🟠 Development: active integration with features still under construction.
+- 🔴 Planned: intended for future implementation (PRs welcome).
 
-Puede contribuir a este proyecto recomendando o agregando soporte para nuevos backends. Consulte la guía en: <https://syn4pse.pages.dev/backends/quickstart>
+## Installation
 
-## Instalación
+Docker images available at: <https://ghcr.io/ju4n97/syn4pse>
 
-Las imágenes oficiales de SYN4PSE están disponibles en: <https://ghcr.io/ekisa-team/syn4pse>
-
-### CPU (compatible con cualquier sistema)
+### CPU
 
 ```bash
-docker run -p 8080:8080 -p 50051:50051 ghcr.io/ekisa-team/syn4pse:latest
+docker run -p 8080:8080 -p 50051:50051 ghcr.io/ju4n97/syn4pse:latest
 ```
 
 ### NVIDIA GPU
 
-Requiere el [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+Requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ```bash
-# CUDA 12.x (RTX 3000+, A100, H100, L40) y CUDA 11.8 (RTX 2000, V100, T4)
-docker run -p 8080:8080 -p 50051:50051 --gpus all ghcr.io/ekisa-team/syn4pse:cuda
-
-# NVIDIA Jetson (Xavier, Orin) – ARM64 (L4T)
-docker run -p 8080:8080 -p 50051:50051 --runtime nvidia ghcr.io/ekisa-team/syn4pse:jetson
-```
-
-### Vulkan GPU
-
-Para GPUs con soporte Vulkan (AMD, Intel o NVIDIA sin CUDA):
-
-```bash
-docker run -p 8080:8080 -p 50051:50051 --device /dev/dri ghcr.io/ekisa-team/syn4pse:vulkan
+docker run -p 8080:8080 -p 50051:50051 --gpus all ghcr.io/ju4n97/syn4pse:cuda
 ```
 
 ## Configuración
 
-SYN4PSE utiliza un archivo `syn4pse.yaml` para definir qué modelos descargar y qué servicios exponer.
+SYN4PSE uses a `syn4pse.yaml` file to define which models to download and which services to expose.
 
 ```yaml
 # syn4pse.yaml
@@ -277,38 +221,19 @@ services:
         models: [piper-es-ar-daniela]
 ```
 
-### Variables de entorno
+### Environment variables
 
-| Variable de entorno        | Descripción                                       |
-| -------------------------- | ------------------------------------------------- |
-| `SYN4PSE_ENV`              | Entorno de ejecución (`dev`, `prod`, etc.)        |
-| `SYN4PSE_SERVER_HTTP_PORT` | Puerto HTTP del servidor                          |
-| `SYN4PSE_SERVER_GRPC_PORT` | Puerto gRPC del servidor                          |
-| `SYN4PSE_MODELS_PATH`      | Ruta donde se almacenan los modelos               |
-| `SYN4PSE_CONFIG_PATH`      | Ruta al archivo de configuración (`syn4pse.yaml`) |
+| Variable                   | Description                               |
+| -------------------------- | ----------------------------------------- |
+| `SYN4PSE_ENV`              | Runtime environment (`dev`, `prod`, etc.) |
+| `SYN4PSE_SERVER_HTTP_PORT` | HTTP server port                          |
+| `SYN4PSE_SERVER_GRPC_PORT` | gRPC server port                          |
+| `SYN4PSE_MODELS_PATH`      | Path to models directory                  |
+| `SYN4PSE_CONFIG_PATH`      | Path to config file (`syn4pse.yaml`)      |
 
-### Uso en Docker
+## Development
 
-Montar archivo de configuración:
-
-```bash
-docker run -p 8080:8080 -p 50051:50051 \
-    -v ./syn4pse.yaml:/app/syn4pse.yaml \
-    ghcr.io/ekisa-team/syn4pse:latest
-```
-
-Configurar vía variables de entorno:
-
-```bash
-docker run -p 8080:8080 -p 50051:50051 \
-    -e SYN4PSE_MODELS_PATH=/data/models \
-    -e SYN4PSE_CONFIG_PATH=/app/syn4pse.yaml \
-    ghcr.io/ekisa-team/syn4pse:cuda
-```
-
-## Desarrollo
-
-### Requisitos
+### Requirements
 
 - [Go v1.25+](https://go.dev)
 - [CMake v3.22+](https://cmake.org)
@@ -317,24 +242,18 @@ docker run -p 8080:8080 -p 50051:50051 \
 - [protoc](https://github.com/protocolbuffers/protobuf)
 
 ```bash
-git clone --recursive https://github.com/ekisa-team/syn4pse.git
+git clone --recursive https://github.com/ju4n97/ju4n98.git
 cd syn4pse
 
 task install
-# Compilar backends (esto puede tomar varios minutos la primera vez)
+# Build backends (this may take several minutes the first time)
 task build-third-party          # CPU
 # task build-third-party-cuda   # CUDA
-# task build-third-party-vulkan # Vulkan
-# task build-third-party-metal  # Metal
 task help
 ```
 
-[Taskfile.yaml](./Taskfile.yaml) es su guía de referencia.
+[Taskfile.yaml](./Taskfile.yaml) is your guide.
 
-## Licencia
+## License
 
-Este proyecto es propietario. Consulte los términos completos en [LICENSE](./LICENSE).
-
----
-
-© 2025 Ekisa. Todos los derechos reservados.
+[MIT](LICENSE)

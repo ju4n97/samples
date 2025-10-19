@@ -23,18 +23,18 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/ekisa-team/syn4pse/backend"
-	"github.com/ekisa-team/syn4pse/backend/llama"
-	"github.com/ekisa-team/syn4pse/backend/piper"
-	"github.com/ekisa-team/syn4pse/backend/whisper"
-	"github.com/ekisa-team/syn4pse/config"
-	"github.com/ekisa-team/syn4pse/env"
-	"github.com/ekisa-team/syn4pse/logger"
-	"github.com/ekisa-team/syn4pse/model"
-	inferencev1 "github.com/ekisa-team/syn4pse/pb/inference/v1"
-	syn4psegrpc "github.com/ekisa-team/syn4pse/server/grpc"
-	syn4psehttp "github.com/ekisa-team/syn4pse/server/http"
-	"github.com/ekisa-team/syn4pse/service"
+	syn4psegrpc "github.com/ju4n97/syn4pse/api/grpc"
+	syn4psehttp "github.com/ju4n97/syn4pse/api/http"
+	"github.com/ju4n97/syn4pse/internal/backend"
+	"github.com/ju4n97/syn4pse/internal/backend/llama"
+	"github.com/ju4n97/syn4pse/internal/backend/piper"
+	"github.com/ju4n97/syn4pse/internal/backend/whisper"
+	"github.com/ju4n97/syn4pse/internal/config"
+	"github.com/ju4n97/syn4pse/internal/env"
+	"github.com/ju4n97/syn4pse/internal/logger"
+	"github.com/ju4n97/syn4pse/internal/model"
+	inferencev1 "github.com/ju4n97/syn4pse/internal/pb/inference/v1"
+	"github.com/ju4n97/syn4pse/internal/service"
 )
 
 func main() {
@@ -125,17 +125,14 @@ func main() {
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	// Build servers
 	httpServer := buildHTTPServer(*flagHTTPPort, backends, modelManager.Registry())
 	grpcServer := buildGRPCServer(backends, modelManager.Registry())
 
-	// Start HTTP server
 	g.Go(func() error {
 		slog.Info("Starting HTTP server", "port", *flagHTTPPort)
 		return runHTTPServer(ctx, httpServer)
 	})
 
-	// Start gRPC server
 	g.Go(func() error {
 		slog.Info("Starting gRPC server", "port", *flagGRPCPort)
 		return runGRPCServer(ctx, grpcServer, *flagGRPCPort)
@@ -185,10 +182,9 @@ func runGRPCServer(ctx context.Context, server *grpc.Server, port int) error {
 		return fmt.Errorf("manager: failed to listen on %s: %w", addr, err)
 	}
 
-	// Graceful shutdown
 	go func() {
 		<-ctx.Done()
-		slog.Info("Shutting down gRPC server...")
+		slog.Info("Gracefully shutting down gRPC server...")
 		server.GracefulStop()
 	}()
 
