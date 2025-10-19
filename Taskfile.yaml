@@ -99,6 +99,7 @@ tasks:
     desc: Generate Go code from protobuf definitions
     cmds:
       - |
+        mkdir -p pb
         protoc \
           -I proto \
           --go_out=pb \

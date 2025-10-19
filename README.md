@@ -321,7 +321,7 @@ git clone --recursive https://github.com/ekisa-team/syn4pse.git
 cd syn4pse
 
 task install
-# Compilar backends (esto puede tomar varios minutos)
+# Compilar backends (esto puede tomar varios minutos la primera vez)
 task build-third-party          # CPU
 # task build-third-party-cuda   # CUDA
 # task build-third-party-vulkan # Vulkan

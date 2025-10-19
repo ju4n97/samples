@@ -30,7 +30,7 @@ go.work.sum
 # .vscode/
 
 # protocol buffers
-*.pb.go
+# *.pb.go
 
 # OS files
 .DS_Store
