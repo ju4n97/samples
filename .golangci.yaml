@@ -33,7 +33,6 @@ linters:
     - misspell # Spelling
     - whitespace # Trailing and mixed spaces
     - nolintlint # Detect invalid //nolint comments
-
   settings:
     gocritic:
       disabled-checks:
@@ -60,7 +59,6 @@ linters:
       exported-fields-are-used: false
       local-variables-are-used: false
       generated-is-used: false
-
   exclusions:
     paths:
       - "third_party"
@@ -77,3 +75,7 @@ formatters:
         - standard
         - default
         - prefix(github.com/ekisa-team/syn4pse)
+  exclusions:
+    paths:
+      - "third_party"
+      - "pb"
