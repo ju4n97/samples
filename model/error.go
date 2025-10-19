@@ -2,4 +2,7 @@ package model
 
 import "errors"
 
-var ErrModelNotFound = errors.New("model not found in registry")
+// Error definitions for the model package.
+var (
+	ErrModelNotFound = errors.New("model not found in registry")
+)

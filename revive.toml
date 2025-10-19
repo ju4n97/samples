@@ -1,0 +1,669 @@
+ignoreGeneratedHeader = false
+severity = "warning"
+confidence = 0.8
+errorCode = 1
+warningCode = 0
+exclude = ["vendor/...", "third_party/...", "pb/..."]
+
+# Require documentation when disabling linter directives
+[directive.specify-disable-reason]
+severity = "error"
+
+# ==============================================================================
+# CORE GO IDIOMS
+# ==============================================================================
+
+# Disallow blank imports except for side effects like database drivers
+[rule.blank-imports]
+
+# context.Context must be the first parameter, except in test helpers
+[rule.context-as-argument]
+arguments = [{ allowTypesBefore = "*testing.T,*testing.B" }]
+
+# Context keys must be properly typed, not string or int
+[rule.context-keys-type]
+
+# Prevent dot imports except in tests
+[rule.dot-imports]
+
+# error must be the last return value
+[rule.error-return]
+
+# Error strings should not be capitalized or end with punctuation
+[rule.error-strings]
+
+# Error variables should be named errFoo or ErrFoo
+[rule.error-naming]
+
+# Exported items must have documentation comments
+[rule.exported]
+arguments = ["checkPrivateReceivers", "sayRepetitiveInsteadOfStutters"]
+
+# Use i++ and i-- instead of i += 1 and i -= 1
+[rule.increment-decrement]
+
+# Enforce idiomatic variable naming: camelCase, no underscores
+[rule.var-naming]
+arguments = [
+    [
+        # Web & Internet
+        "API",
+        "HTTP",
+        "HTTPS",
+        "URL",
+        "URI",
+        "HTML",
+        "CSS",
+        "DOM",
+        "XML",
+        "JSON",
+        "AJAX",
+        "REST",
+        "SOAP",
+        "WebRTC",
+        "WebGL",
+        "SSL",
+        "TLS",
+        "FTP",
+        "SFTP",
+        "SSH",
+        "DNS",
+        "IP",
+        "TCP",
+        "UDP",
+        "SMTP",
+        "POP",
+        "IMAP",
+        "CDN",
+        "CORS",
+        "CSRF",
+        "XSS",
+        "SEO",
+        "SPA",
+        "PWA",
+        "SSR",
+        "CSR",
+
+        # Database & Storage
+        "SQL",
+        "NoSQL",
+        "DB",
+        "DBMS",
+        "ORM",
+        "CRUD",
+        "ACID",
+        "BLOB",
+        "CLOB",
+        "RDBMS",
+        "CSV",
+        "TSV",
+        "JDBC",
+        "ODBC",
+        "DAO",
+        "DTO",
+
+        # Identifiers & Keys
+        "ID",
+        "UID",
+        "UUID",
+        "GUID",
+        "PK",
+        "FK",
+        "JWT",
+        "OAuth",
+        "SSO",
+        "SAML",
+        "LDAP",
+        "ACL",
+        "RBAC",
+
+        # Programming & Software
+        "OS",
+        "UI",
+        "UX",
+        "GUI",
+        "CLI",
+        "REPL",
+        "SDK",
+        "JDK",
+        "IDE",
+        "VM",
+        "JVM",
+        "CLR",
+        "GC",
+        "RAM",
+        "CPU",
+        "GPU",
+        "SSD",
+        "HDD",
+        "I/O",
+        "IO",
+        "API",
+        "SPI",
+        "ABI",
+        "DLL",
+        "EXE",
+        "BIN",
+        "LIB",
+        "OOP",
+        "FP",
+
+        # Data Formats & Encodings
+        "UTF",
+        "ASCII",
+        "Base64",
+        "MD5",
+        "SHA",
+        "AES",
+        "RSA",
+        "PGP",
+        "GIF",
+        "JPEG",
+        "JPG",
+        "PNG",
+        "SVG",
+        "PDF",
+        "YAML",
+        "TOML",
+        "INI",
+        "MIME",
+
+        # Mobile & Platforms
+        "iOS",
+        "macOS",
+        "tvOS",
+        "watchOS",
+        "Android",
+        "APK",
+        "IPA",
+        "SDK",
+        "NDK",
+        "JNI",
+
+        # Cloud & DevOps
+        "AWS",
+        "GCP",
+        "Azure",
+        "CI",
+        "CD",
+        "VCS",
+        "Git",
+        "SVN",
+        "Docker",
+        "VM",
+        "VPS",
+        "SaaS",
+        "PaaS",
+        "IaaS",
+        "FaaS",
+        "EC2",
+        "S3",
+        "RDS",
+        "VPC",
+        "IAM",
+        "CLI",
+        "TTL",
+        "TTY",
+        "SSH",
+        "VPN",
+
+        # Testing & Quality
+        "QA",
+        "TDD",
+        "BDD",
+        "UAT",
+        "E2E",
+        "A/B",
+        "AB",
+
+        # Business & Analytics
+        "CRM",
+        "ERP",
+        "CMS",
+        "KPI",
+        "ROI",
+        "B2B",
+        "B2C",
+        "ETL",
+        "OLAP",
+        "OLTP",
+        "BI",
+        "ML",
+        "AI",
+        "NLP",
+        "OCR",
+        "AR",
+        "VR",
+        "XR",
+        "MR",
+
+        # Protocols & Standards
+        "MIME",
+        "RFC",
+        "ISO",
+        "IEEE",
+        "W3C",
+        "ECMA",
+        "ANSI",
+        "UTC",
+        "GMT",
+        "POSIX",
+        "WSDL",
+        "WADL",
+        "GraphQL",
+        "gRPC",
+        "AMQP",
+        "MQTT",
+        "WebSocket",
+
+        # Media & Content
+        "MPEG",
+        "MP3",
+        "MP4",
+        "AVI",
+        "WAV",
+        "FLAC",
+        "OGG",
+        "WebM",
+        "HLS",
+        "DASH",
+        "DRM",
+        "CDN",
+        "P2P",
+        "RSS",
+        "Atom",
+
+        # Networking
+        "LAN",
+        "WAN",
+        "VLAN",
+        "NAT",
+        "DHCP",
+        "NTP",
+        "BGP",
+        "ICMP",
+        "ARP",
+        "MAC",
+        "ISP",
+        "QoS",
+        "MTU",
+
+        # File Systems & Archives
+        "FS",
+        "NTFS",
+        "FAT",
+        "EXT",
+        "ZIP",
+        "TAR",
+        "GZ",
+        "RAR",
+        "BZIP",
+
+        # Configuration & Environment
+        "ENV",
+        "Config",
+        "CFG",
+        "ARGV",
+        "ARGC",
+        "STDIN",
+        "STDOUT",
+        "STDERR",
+        "EOF",
+        "EOL",
+        "CRLF",
+        "LF",
+
+        # Version Control & Package Management
+        "NPM",
+        "Yarn",
+        "Maven",
+        "Gradle",
+        "Pip",
+        "Gem",
+        "Cargo",
+        "NuGet",
+        "Composer",
+        "PNPM",
+
+        # Logging & Monitoring
+        "Log",
+        "Debug",
+        "Trace",
+        "Warn",
+        "Error",
+        "Fatal",
+        "APM",
+        "RUM",
+
+        # Mathematics & Science
+        "RGB",
+        "RGBA",
+        "CMYK",
+        "HSL",
+        "HSV",
+        "XYZ",
+        "NaN",
+        "Inf",
+
+        # Hardware & Electronics
+        "USB",
+        "PCIe",
+        "SATA",
+        "NVMe",
+        "BIOS",
+        "UEFI",
+        "LCD",
+        "LED",
+        "OLED",
+        "HDMI",
+        "DisplayPort",
+        "Thunderbolt",
+        "NFC",
+        "RFID",
+        "Bluetooth",
+        "WiFi",
+
+        # Gaming & Graphics
+        "FPS",
+        "RPG",
+        "MMO",
+        "NPC",
+        "AI",
+        "HUD",
+        "LOD",
+        "PBR",
+        "HDR",
+
+        # Miscellaneous Common Abbreviations
+        "ASAP",
+        "FAQ",
+        "TBD",
+        "TBA",
+        "TODO",
+        "FIXME",
+        "HACK",
+        "NOTE",
+        "TEMP",
+        "TMP",
+        "MAX",
+        "MIN",
+        "AVG",
+        "SUM",
+        "COUNT",
+        "REGEX",
+        "i18n",
+        "l10n",
+        "a11y",
+    ],
+    [],
+]
+
+# Use := when possible, var when type needs to be explicit
+[rule.var-declaration]
+
+# Enforce proper range usage to avoid unnecessary copies
+[rule.range]
+
+# Receiver names should be consistent and short, usually 1-2 letters
+[rule.receiver-naming]
+
+# Time variables should be suffixed with Time or At
+[rule.time-naming]
+
+# Don't return unexported types from exported functions
+[rule.unexported-return]
+
+# Enforce early returns to avoid deep nesting
+[rule.indent-error-flow]
+
+# Use fmt.Errorf instead of errors.New(fmt.Sprintf(...))
+[rule.errorf]
+
+# ==============================================================================
+# CODE QUALITY & BEST PRACTICES
+# ==============================================================================
+
+# Detect common mistakes with sync/atomic package
+[rule.atomic]
+
+# Simplify boolean expressions like if x == true to if x
+[rule.bool-literal-in-expr]
+
+# Detect constant boolean expressions that are always true or false
+[rule.constant-logical-expr]
+
+# Prefer early returns over deep nesting
+[rule.early-return]
+
+# Check for common defer mistakes in loops and method calls
+[rule.defer]
+
+# Flag empty blocks that usually indicate incomplete code
+[rule.empty-block]
+
+# Enforce reasonable empty line usage
+[rule.empty-lines]
+
+# Remove unnecessary else clauses after return statements
+[rule.superfluous-else]
+
+# Prevent confusingly similar names in the same scope
+[rule.confusing-naming]
+
+# Named return values should not shadow each other
+[rule.confusing-results]
+
+# Avoid os.Exit and log.Fatal in library code
+[rule.deep-exit]
+
+# Prevent duplicate imports
+[rule.duplicated-imports]
+
+# Getter methods should return something, not just have side effects
+[rule.get-return]
+
+# Flag when functions modify their parameters unexpectedly
+[rule.modifies-parameter]
+
+# Flag when methods modify value receivers instead of using pointer receivers
+[rule.modifies-value-receiver]
+
+# Put constants on the right side of comparisons: x == 42, not 42 == x
+[rule.optimize-operands-order]
+
+# Don't take address of range value variable due to loop variable reuse
+[rule.range-val-address]
+
+# Capture range variables properly in closures
+[rule.range-val-in-closure]
+
+# Don't shadow builtin identifiers like len, cap, copy
+[rule.redefines-builtin-id]
+
+# Prevent string(42) mistakes, use strconv.Itoa instead
+[rule.string-of-int]
+
+# Use time.Time.Equal instead of == for time comparison
+[rule.time-equal]
+
+# Detect unconditional recursion that causes infinite loops
+[rule.unconditional-recursion]
+
+# Unexported names should not start with underscore
+[rule.unexported-naming]
+
+# Remove unnecessary statements like empty if blocks
+[rule.unnecessary-stmt]
+
+# Detect unreachable code after return or panic
+[rule.unreachable-code]
+
+# Remove useless break statements in switch cases
+[rule.useless-break]
+
+# Don't pass sync.WaitGroup by value, always use pointer
+[rule.waitgroup-by-value]
+
+# Detect potential data races with goroutines
+[rule.datarace]
+
+# ==============================================================================
+# FUNCTION & COMPLEXITY MANAGEMENT
+# ==============================================================================
+
+# Limit cognitive complexity to keep code understandable
+[rule.cognitive-complexity]
+arguments = [25]
+
+# Limit cyclomatic complexity to reduce the number of independent paths
+[rule.cyclomatic]
+arguments = [25]
+
+# Limit number of return values to keep functions easy to use
+[rule.function-result-limit]
+arguments = [4]
+
+# Limit number of function arguments, prefer structs for many parameters
+[rule.argument-limit]
+arguments = [6]
+
+# Limit control structure nesting depth
+[rule.max-control-nesting]
+arguments = [4]
+
+# ==============================================================================
+# ERROR HANDLING
+# ==============================================================================
+
+# Flag unchecked errors for functions that should always be checked
+[rule.unhandled-error]
+arguments = [
+    "fmt.Printf",
+    "fmt.Println",
+    "fmt.Print",
+    "fmt.Fprintf",
+    "fmt.Fprintln",
+    "fmt.Fprint",
+    "math/rand.Read",
+    "strings.Builder.WriteString",
+    "strings.Builder.WriteByte",
+    "strings.Builder.WriteRune",
+    "io.Closer.Close",
+]
+
+# Always check type assertions with the comma-ok idiom
+[rule.unchecked-type-assertion]
+
+# ==============================================================================
+# IMPORTS & DEPENDENCIES
+# ==============================================================================
+
+# Import aliases should be lowercase following Go convention
+[rule.import-alias-naming]
+arguments = ["^[a-z][a-z0-9]{0,}$"]
+
+# Don't shadow imported package names with local variables
+[rule.import-shadowing]
+
+# ==============================================================================
+# COMMENTS & DOCUMENTATION
+# ==============================================================================
+
+# Enforce space after comment marker: // TODO, not //TODO
+[rule.comment-spacings]
+arguments = ["nolint", "revive", "TODO", "FIXME", "BUG", "HACK", "NOTE"]
+
+
+# ==============================================================================
+# TESTING BEST PRACTICES
+# ==============================================================================
+
+# Avoid boolean parameters, prefer explicit function names or options struct
+[rule.flag-parameter]
+severity = "warning"
+
+# Prefer named struct types over anonymous nested structs
+[rule.nested-structs]
+
+# ==============================================================================
+# PERFORMANCE & EFFICIENCY
+# ==============================================================================
+
+# Use proper string formatting functions to avoid unnecessary fmt.Sprintf
+[rule.string-format]
+
+# Use 'any' instead of 'interface{}' for Go 1.18+
+[rule.use-any]
+
+# ==============================================================================
+# MODERN GO PRACTICES (Go 1.18+)
+# ==============================================================================
+
+# Prefer map[K]V{} over make(map[K]V) for empty maps
+[rule.enforce-map-style]
+arguments = ["literal"]
+
+# Prefer []T{} over make([]T, 0) for empty slices
+[rule.enforce-slice-style]
+arguments = ["literal"]
+
+# ==============================================================================
+# CODE STYLE CONSISTENCY
+# ==============================================================================
+
+# Flag identical if/else branches indicating code duplication
+[rule.identical-branches]
+
+# Simplify if-return statements by removing redundant else
+[rule.if-return]
+
+# Avoid fmt.Sprintf when simpler alternatives exist
+[rule.unnecessary-format]
+
+# ==============================================================================
+# DISABLED RULES
+# ==============================================================================
+
+# Disabled: requires package comment in every file
+[rule.package-comments]
+disabled = true
+
+# Disabled: affects readability without clear functional benefit
+[rule.unused-parameter]
+disabled = true
+
+# Disabled: affects readability without clear functional benefit
+[rule.unused-receiver]
+disabled = true
+
+# Disabled: modern screens and formatters handle line length well
+[rule.line-length-limit]
+disabled = true
+
+# Disabled: complexity metrics are better indicators than raw line count
+[rule.function-length]
+disabled = true
+
+# Disabled: only needed for copyright/license header requirements
+[rule.file-header]
+disabled = true
+
+# Disabled: depends on package purpose and design
+[rule.max-public-structs]
+disabled = true
+
+# Disabled: can lead to nonsensical comments without adding value
+[rule.comments-density]
+disabled = true
+
+# Disabled: only needed for specific character encoding requirements
+[rule.banned-characters]
+disabled = true
+
+# Disabled: better to split based on cohesion not line count
+[rule.file-length-limit]
+disabled = true
+
+# Disabled: can reduce readability, prefer explicit constants when meaningful
+[rule.add-constant]
+disabled = true

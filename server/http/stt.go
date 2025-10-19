@@ -17,6 +17,14 @@ import (
 )
 
 type (
+	// TranscribeRequestDTO is the request body for the Transcribe operation.
+	TranscribeRequestDTO struct {
+		AudioFile  huma.FormFile `contentType:"audio/*,application/octet-stream" form:"file"   required:"true"`
+		ModelID    string        `form:"model_id"                                minLength:"1" required:"true"`
+		Parameters string        `form:"parameters"` // JSON-encoded optional parameters
+	}
+
+	// TranscribeResponseDTO is the response body for the Transcribe operation.
 	TranscribeResponseDTO struct {
 		Metadata *backend.ResponseMetadata `json:"metadata,omitempty"`
 		Text     string                    `json:"text"`
@@ -24,14 +32,12 @@ type (
 )
 
 type (
+	// TranscribeInput is the huma input for the Transcribe operation.
 	TranscribeInput struct {
-		RawBody huma.MultipartFormFiles[struct {
-			AudioFile  huma.FormFile `contentType:"audio/*,application/octet-stream" form:"file"   required:"true"`
-			ModelID    string        `form:"model_id"                                minLength:"1" required:"true"`
-			Parameters string        `form:"parameters"` // JSON-encoded optional parameters
-		}]
+		RawBody huma.MultipartFormFiles[TranscribeRequestDTO]
 	}
 
+	// TranscribeOutput is the huma output for the Transcribe operation.
 	TranscribeOutput struct {
 		Body TranscribeResponseDTO
 	}

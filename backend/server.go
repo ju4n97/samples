@@ -37,7 +37,7 @@ type ServerConfig struct {
 // NewServerManager initializes a ServerManager.
 func NewServerManager() *ServerManager {
 	return &ServerManager{
-		servers: make(map[string]*ServerProcess),
+		servers: map[string]*ServerProcess{},
 	}
 }
 
@@ -107,18 +107,19 @@ func (sm *ServerManager) StopServer(name string, port int) error {
 	defer sm.mu.Unlock()
 
 	key := fmt.Sprintf("%s-%d", name, port)
-	if srv, exists := sm.servers[key]; exists {
-		srv.cancel()
-		if err := srv.cmd.Process.Kill(); err != nil {
-			slog.Error("Failed to kill server process", "error", err)
-		}
-
-		delete(sm.servers, key)
-		slog.Info("Server stopped", "name", name, "port", port)
-		return nil
-	} else {
+	srv, exists := sm.servers[key]
+	if !exists {
 		return fmt.Errorf("server %s-%d not found", name, port)
 	}
+
+	srv.cancel()
+	if err := srv.cmd.Process.Kill(); err != nil {
+		slog.Error("Failed to kill server process", "error", err)
+	}
+
+	delete(sm.servers, key)
+	slog.Info("Server stopped", "name", name, "port", port)
+	return nil
 }
 
 // StopAll terminates all running servers.
@@ -132,7 +133,7 @@ func (sm *ServerManager) StopAll() {
 			slog.Error("Failed to kill server process", "error", err)
 		}
 	}
-	sm.servers = make(map[string]*ServerProcess)
+	sm.servers = map[string]*ServerProcess{}
 
 	slog.Info("All servers stopped")
 }
@@ -149,17 +150,12 @@ func (sm *ServerManager) waitForServer(ctx context.Context, url string, timeout 
 		}
 
 		resp, err := client.Do(req)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			if err = resp.Body.Close(); err != nil {
-				return fmt.Errorf("failed to close response body: %w", err)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
 			}
-			return nil
 		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				slog.Error("failed to close response body", "error", err)
-			}
-		}()
 
 		time.Sleep(1 * time.Second)
 	}

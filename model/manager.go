@@ -39,7 +39,7 @@ func (m *Manager) LoadModelsFromConfig(ctx context.Context, cfg *config.Config) 
 
 	m.registry = NewRegistry()
 
-	assignedModels := make(map[string]bool)
+	assignedModels := map[string]bool{}
 	for _, model := range cfg.Services.LLM.Models {
 		assignedModels[model] = true
 	}
@@ -58,7 +58,7 @@ func (m *Manager) LoadModelsFromConfig(ctx context.Context, cfg *config.Config) 
 		return fmt.Errorf("manager: failed to prepare models directory %s: %w", modelsPath, err)
 	}
 
-	loadedKeys := make(map[string]bool)
+	loadedKeys := map[string]bool{}
 	for modelID := range assignedModels {
 		modelConfig, ok := cfg.Models[modelID]
 		if !ok {
@@ -84,7 +84,7 @@ func (m *Manager) LoadModelsFromConfig(ctx context.Context, cfg *config.Config) 
 		instance := NewModelInstance(&modelConfig, modelID, downloadPath)
 		loadedKeys[modelID] = true
 		m.registry.Set(instance)
-		instance.SetStatus(ModelStatusUnloaded)
+		instance.SetStatus(StatusUnloaded)
 
 		slog.Info("Model loaded into registry", "model_id", modelID, "download_path", downloadPath)
 	}

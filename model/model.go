@@ -6,79 +6,79 @@ import (
 	"github.com/ekisa-team/syn4pse/config"
 )
 
-// ModelType is the type of a model.
-type ModelType string
+// Type is the type of a model.
+type Type string
 
 const (
-	// ModelTypeLLM is the type of a large language model.
-	ModelTypeLLM ModelType = "llm"
+	// TypeLLM is the type of a large language model.
+	TypeLLM Type = "llm"
 
-	// ModelTypeNLU is the type of a natural language understanding model.
-	ModelTypeNLU ModelType = "nlu"
+	// TypeNLU is the type of a natural language understanding model.
+	TypeNLU Type = "nlu"
 
-	// ModelTypeSTT is the type of a speech-to-text model.
-	ModelTypeSTT ModelType = "stt"
+	// TypeSTT is the type of a speech-to-text model.
+	TypeSTT Type = "stt"
 
-	// ModelTypeTTS is the type of a text-to-speech model.
-	ModelTypeTTS ModelType = "tts"
+	// TypeTTS is the type of a text-to-speech model.
+	TypeTTS Type = "tts"
 
-	// ModelTypeEmbedding is the type of an embedding model.
-	ModelTypeEmbedding ModelType = "embedding"
+	// TypeEmbedding is the type of an embedding model.
+	TypeEmbedding Type = "embedding"
 
-	// ModelTypeVision is the type of a vision model.
-	ModelTypeVision ModelType = "vision"
+	// TypeVision is the type of a vision model.
+	TypeVision Type = "vision"
 )
 
-// ModelStatus is the current loading status of a model.
-type ModelStatus string
+// Status is the current loading status of a model.
+type Status string
 
 const (
-	// ModelStatusUnloaded indicates that the model is not loaded.
-	ModelStatusUnloaded ModelStatus = "unloaded"
+	// StatusUnloaded indicates that the model is not loaded.
+	StatusUnloaded Status = "unloaded"
 
-	// ModelStatusLoading indicates that the model is being loaded.
-	ModelStatusLoading ModelStatus = "loading"
+	// StatusLoading indicates that the model is being loaded.
+	StatusLoading Status = "loading"
 
-	// ModelStatusLoaded indicates that the model is loaded.
-	ModelStatusLoaded ModelStatus = "loaded"
+	// StatusLoaded indicates that the model is loaded.
+	StatusLoaded Status = "loaded"
 
-	// ModelStatusFailed indicates that the model failed to load.
-	ModelStatusFailed ModelStatus = "failed"
+	// StatusFailed indicates that the model failed to load.
+	StatusFailed Status = "failed"
 
-	// ModelStatusUnloading indicates that the model is being unloaded.
-	ModelStatusUnloading ModelStatus = "unloading"
+	// StatusUnloading indicates that the model is being unloaded.
+	StatusUnloading Status = "unloading"
 )
 
-// ModelInstance represents a loaded model profile.
-type ModelInstance struct {
+// Instance represents a loaded model instance.
+type Instance struct {
 	Config   *config.ModelConfig `json:"config"`
 	LoadedAt *time.Time          `json:"loaded_at,omitempty"`
 	ID       string              `json:"id"`
 	Path     string              `json:"-"`
-	Status   ModelStatus         `json:"status"`
+	Status   Status              `json:"status"`
 	Error    string              `json:"error,omitempty"`
 }
 
 // NewModelInstance creates a new model instance.
-func NewModelInstance(cfg *config.ModelConfig, id, path string) *ModelInstance {
-	return &ModelInstance{
+func NewModelInstance(cfg *config.ModelConfig, id, path string) *Instance {
+	return &Instance{
 		ID:     id,
 		Path:   path,
 		Config: cfg,
-		Status: ModelStatusUnloaded,
+		Status: StatusUnloaded,
 	}
 }
 
 // SetStatus sets the status of the model instance.
-func (mi *ModelInstance) SetStatus(status ModelStatus) {
+func (mi *Instance) SetStatus(status Status) {
 	mi.Status = status
-	if status == ModelStatusLoaded {
+	if status == StatusLoaded {
 		now := time.Now()
 		mi.LoadedAt = &now
 	}
 }
 
 // SetError sets the error associated with the model instance.
-func (mi *ModelInstance) SetError(err error) {
+func (mi *Instance) SetError(err error) {
 	mi.Error = err.Error()
 }

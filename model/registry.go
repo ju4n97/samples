@@ -6,19 +6,19 @@ import (
 
 // Registry stores loaded model instances.
 type Registry struct {
-	models map[string]*ModelInstance
+	models map[string]*Instance
 	mu     sync.RWMutex
 }
 
 // NewRegistry creates a new model registry.
 func NewRegistry() *Registry {
 	return &Registry{
-		models: make(map[string]*ModelInstance),
+		models: map[string]*Instance{},
 	}
 }
 
 // Set adds a model instance to the registry.
-func (r *Registry) Set(instance *ModelInstance) {
+func (r *Registry) Set(instance *Instance) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -26,7 +26,7 @@ func (r *Registry) Set(instance *ModelInstance) {
 }
 
 // Get returns the model instance with the given ID.
-func (r *Registry) Get(id string) (*ModelInstance, bool) {
+func (r *Registry) Get(id string) (*Instance, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -35,11 +35,11 @@ func (r *Registry) Get(id string) (*ModelInstance, bool) {
 }
 
 // List returns all model instances.
-func (r *Registry) List() []*ModelInstance {
+func (r *Registry) List() []*Instance {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	instances := make([]*ModelInstance, 0, len(r.models))
+	instances := make([]*Instance, 0, len(r.models))
 	for _, instance := range r.models {
 		instances = append(instances, instance)
 	}

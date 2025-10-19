@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	// BackendName is the name of the backend.
 	BackendName = "piper"
 )
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -17,7 +16,10 @@ import (
 )
 
 const (
+	// BackendName is the name of the backend.
 	BackendName = "whisper.cpp"
+
+	// BackendPort is the default port for the backend server.
 	BackendPort = 8082
 )
 
@@ -109,7 +111,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 		BinPath:    b.binPath,
 		Args:       args,
 		Port:       b.port,
-		HealthPath: "/", // Whisper server doesn't have a dedicated health endpoint
+		HealthPath: "/",
 	}); err != nil {
 		return nil, fmt.Errorf("manager: failed to start server: %w", err)
 	}
@@ -158,11 +160,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	if err != nil {
 		return nil, fmt.Errorf("manager: failed to execute request: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			slog.Error("Failed to close response body", "error", err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	elapsed := time.Since(start).Seconds()
 
@@ -198,7 +196,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 func (b *Backend) buildTranscriptionRequest(req *backend.Request) *TranscriptionRequest {
 	p := req.Parameters
 	if p == nil {
-		p = make(map[string]any)
+		p = map[string]any{}
 	}
 
 	return &TranscriptionRequest{

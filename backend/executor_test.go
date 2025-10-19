@@ -47,7 +47,7 @@ func TestNewExecutor(t *testing.T) {
 func TestExecute(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		runner := &mockRunner{
-			runFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
+			runFunc: func(_ context.Context, name string, args []string, _ io.Reader) ([]byte, []byte, error) {
 				assert.Equal(t, "/bin/test", name)
 				assert.Equal(t, []string{"arg1", "arg2"}, args)
 				return []byte("output"), []byte(""), nil
@@ -64,7 +64,7 @@ func TestExecute(t *testing.T) {
 
 	t.Run("with stdin", func(t *testing.T) {
 		runner := &mockRunner{
-			runFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
+			runFunc: func(_ context.Context, _ string, _ []string, stdin io.Reader) ([]byte, []byte, error) {
 				data, _ := io.ReadAll(stdin)
 				assert.Equal(t, "input", string(data))
 				return []byte("output"), []byte(""), nil
@@ -80,7 +80,7 @@ func TestExecute(t *testing.T) {
 
 	t.Run("command fails", func(t *testing.T) {
 		runner := &mockRunner{
-			runFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
+			runFunc: func(_ context.Context, _ string, _ []string, _ io.Reader) ([]byte, []byte, error) {
 				return []byte(""), []byte("error"), errors.New("exit status 1")
 			},
 		}
@@ -96,7 +96,7 @@ func TestExecute(t *testing.T) {
 
 	t.Run("timeout", func(t *testing.T) {
 		runner := &mockRunner{
-			runFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
+			runFunc: func(ctx context.Context, _ string, _ []string, _ io.Reader) ([]byte, []byte, error) {
 				<-ctx.Done()
 				return nil, nil, ctx.Err()
 			},
@@ -113,7 +113,7 @@ func TestExecute(t *testing.T) {
 func TestStream(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		runner := &mockRunner{
-			startFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+			startFunc: func(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
 				stdout := nopCloser{strings.NewReader("line1\nline2\nline3\n")}
 				stderr := nopCloser{strings.NewReader("")}
 				wait := func() error { return nil }
@@ -141,7 +141,7 @@ func TestStream(t *testing.T) {
 
 	t.Run("command fails", func(t *testing.T) {
 		runner := &mockRunner{
-			startFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+			startFunc: func(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
 				stdout := nopCloser{strings.NewReader("output\n")}
 				stderr := nopCloser{strings.NewReader("error message")}
 				wait := func() error { return errors.New("exit status 1") }
@@ -169,7 +169,7 @@ func TestStream(t *testing.T) {
 
 	t.Run("start fails", func(t *testing.T) {
 		runner := &mockRunner{
-			startFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+			startFunc: func(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
 				return nil, nil, nil, errors.New("cannot start")
 			},
 		}
@@ -186,7 +186,7 @@ func TestStream(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		runner := &mockRunner{
-			startFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+			startFunc: func(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
 				// Simulate slow output
 				r := &slowReader{
 					data:   "line1\nline2\nline3\n",
@@ -221,7 +221,7 @@ func TestStream(t *testing.T) {
 
 	t.Run("empty output", func(t *testing.T) {
 		runner := &mockRunner{
-			startFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
+			startFunc: func(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
 				stdout := nopCloser{strings.NewReader("")}
 				stderr := nopCloser{strings.NewReader("")}
 				wait := func() error { return nil }
@@ -270,39 +270,4 @@ func (s *slowReader) Read(p []byte) (int, error) {
 	n := copy(p, s.data[s.pos:])
 	s.pos += n
 	return n, nil
-}
-
-func BenchmarkExecute(b *testing.B) {
-	runner := &mockRunner{
-		runFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) ([]byte, []byte, error) {
-			return []byte("output"), []byte(""), nil
-		},
-	}
-
-	ex := backend.NewExecutorWithRunner("/bin/test", time.Second, runner)
-	ctx := context.Background()
-
-	for b.Loop() {
-		_, _, _ = ex.Execute(ctx, []string{"arg"}, nil)
-	}
-}
-
-func BenchmarkStream(b *testing.B) {
-	runner := &mockRunner{
-		startFunc: func(ctx context.Context, name string, args []string, stdin io.Reader) (io.ReadCloser, io.ReadCloser, func() error, error) {
-			stdout := nopCloser{strings.NewReader("line1\nline2\n")}
-			stderr := nopCloser{strings.NewReader("")}
-			wait := func() error { return nil }
-			return stdout, stderr, wait, nil
-		},
-	}
-
-	ex := backend.NewExecutorWithRunner("/bin/test", time.Second, runner)
-	ctx := context.Background()
-
-	for b.Loop() {
-		ch, _ := ex.Stream(ctx, []string{}, nil)
-		for range ch {
-		}
-	}
 }

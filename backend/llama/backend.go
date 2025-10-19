@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,7 +15,10 @@ import (
 )
 
 const (
+	// BackendName is the name of the backend.
 	BackendName = "llama.cpp"
+
+	// BackendPort is the default port for the backend server.
 	BackendPort = 8081
 )
 
@@ -147,11 +149,7 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 	if err != nil {
 		return nil, fmt.Errorf("manager: failed to execute request: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			slog.Error("Failed to close response body", "error", err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	elapsed := time.Since(start).Seconds()
 
@@ -190,10 +188,10 @@ func (b *Backend) Infer(ctx context.Context, req *backend.Request) (*backend.Res
 }
 
 // buildChatCompletionRequest builds a ChatCompletionRequest from a backend.Request.
-func (s *Backend) buildChatCompletionRequest(req *backend.Request, prompt string) *ChatCompletionRequest {
+func (b *Backend) buildChatCompletionRequest(req *backend.Request, prompt string) *ChatCompletionRequest {
 	p := req.Parameters
 	if p == nil {
-		p = make(map[string]any)
+		p = map[string]any{}
 	}
 
 	messages := []ChatMessage{

@@ -84,12 +84,17 @@ tasks:
   lint:
     desc: Lint code
     cmds:
-      - golangci-lint run ./... --fix
+      - revive -config revive.toml -formatter friendly ./...
 
   fmt:
     desc: Format code
     cmds:
-      - golangci-lint fmt ./...
+      - go fmt $(go list ./... | grep -v /vendor/ | grep -v /third_party/ | grep -v /pb/)
+
+  vet:
+    desc: Vet code
+    cmds:
+      - go vet ./...
 
   # =============================================================================
   # CODE GENERATION

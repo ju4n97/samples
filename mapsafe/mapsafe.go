@@ -3,36 +3,55 @@ package mapsafe
 // Get retrieves a typed value from a map[string]any.
 // If the key is missing or the type cannot be converted, it returns the default value.
 func Get[T any](m map[string]any, key string, defaultValue T) T {
-	if val, ok := m[key]; ok {
-		switch any(defaultValue).(type) {
+	val, ok := m[key]
+	if !ok {
+		return defaultValue
+	}
+
+	// Try direct type match first
+	if result, ok := val.(T); ok {
+		return result
+	}
+
+	// Try type conversions
+	if result, ok := tryConvert[T](val); ok {
+		return result
+	}
+
+	return defaultValue
+}
+
+// tryConvert attempts to convert val to type T with common numeric conversions
+func tryConvert[T any](val any) (T, bool) {
+	var zero T
+
+	// Handle int conversions
+	if _, isInt := any(zero).(int); isInt {
+		switch v := val.(type) {
 		case int:
-			switch x := val.(type) {
-			case int:
-				return any(x).(T)
-			case float64:
-				return any(int(x)).(T)
+			if result, ok := any(v).(T); ok {
+				return result, true
 			}
 		case float64:
-			switch x := val.(type) {
-			case float64:
-				return any(x).(T)
-			case int:
-				return any(float64(x)).(T)
-			}
-		case string:
-			if s, ok := val.(string); ok {
-				return any(s).(T)
-			}
-		case bool:
-			if b, ok := val.(bool); ok {
-				return any(b).(T)
-			}
-		default:
-			// fallback: if type matches exactly
-			if v2, ok := val.(T); ok {
-				return v2
+			if result, ok := any(int(v)).(T); ok {
+				return result, true
 			}
 		}
 	}
-	return defaultValue
+
+	// Handle float64 conversions
+	if _, isFloat := any(zero).(float64); isFloat {
+		switch v := val.(type) {
+		case float64:
+			if result, ok := any(v).(T); ok {
+				return result, true
+			}
+		case int:
+			if result, ok := any(float64(v)).(T); ok {
+				return result, true
+			}
+		}
+	}
+
+	return zero, false
 }

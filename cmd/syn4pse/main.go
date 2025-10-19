@@ -32,8 +32,8 @@ import (
 	"github.com/ekisa-team/syn4pse/logger"
 	"github.com/ekisa-team/syn4pse/model"
 	inferencev1 "github.com/ekisa-team/syn4pse/pb/inference/v1"
-	syn4pse_grpc "github.com/ekisa-team/syn4pse/server/grpc"
-	syn4pse_http "github.com/ekisa-team/syn4pse/server/http"
+	syn4psegrpc "github.com/ekisa-team/syn4pse/server/grpc"
+	syn4psehttp "github.com/ekisa-team/syn4pse/server/http"
 	"github.com/ekisa-team/syn4pse/service"
 )
 
@@ -227,9 +227,9 @@ func buildHTTPServer(port int, backends *backend.Registry, models *model.Registr
 		stt := service.NewSTT(backends, models)
 		tts := service.NewTTS(backends, models)
 
-		syn4pse_http.NewLLMHandler(api, llm)
-		syn4pse_http.NewSTTHandler(api, stt)
-		syn4pse_http.NewTTSHandler(api, tts)
+		syn4psehttp.NewLLMHandler(api, llm)
+		syn4psehttp.NewSTTHandler(api, stt)
+		syn4psehttp.NewTTSHandler(api, tts)
 	})
 
 	return &http.Server{
@@ -249,7 +249,7 @@ func buildGRPCServer(backends *backend.Registry, models *model.Registry) *grpc.S
 		),
 	)
 
-	inferenceServer := syn4pse_grpc.NewInferenceServer(backends, models)
+	inferenceServer := syn4psegrpc.NewInferenceServer(backends, models)
 	inferencev1.RegisterInferenceServiceServer(server, inferenceServer)
 
 	// Enable reflection for development (allows using grpcurl, grpcui, etc.)

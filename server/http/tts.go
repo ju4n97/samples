@@ -17,6 +17,7 @@ import (
 )
 
 type (
+	// SynthesizeRequestDTO is the request body for the Synthesize operation.
 	SynthesizeRequestDTO struct {
 		Parameters map[string]any `json:"parameters,omitempty"`
 		ModelID    string         `json:"model_id"             minLength:"1"`
@@ -25,6 +26,7 @@ type (
 )
 
 type (
+	// SynthesizeInput is the input for the Synthesize operation.
 	SynthesizeInput struct {
 		Body SynthesizeRequestDTO
 	}

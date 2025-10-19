@@ -17,12 +17,14 @@ import (
 )
 
 type (
+	// GenerateRequestDTO is the request body for the Generate operation.
 	GenerateRequestDTO struct {
 		Parameters map[string]any `json:"parameters,omitempty"`
 		ModelID    string         `json:"model_id"             minLength:"1"`
 		Prompt     string         `json:"prompt"               maxLength:"4096" minLength:"1"`
 	}
 
+	// GenerateResponseDTO is the response body for the Generate operation.
 	GenerateResponseDTO struct {
 		Metadata *backend.ResponseMetadata `json:"metadata,omitempty"`
 		Text     string                    `json:"text"`
@@ -30,18 +32,22 @@ type (
 )
 
 type (
+	// GenerateInput is the huma input for the Generate operation.
 	GenerateInput struct {
 		Body GenerateRequestDTO
 	}
 
+	// GenerateStreamInput is the huma input for the GenerateStream operation.
 	GenerateStreamInput struct {
 		Body GenerateRequestDTO
 	}
 
+	// GenerateOutput is the huma output for the Generate operation.
 	GenerateOutput struct {
 		Body GenerateResponseDTO
 	}
 
+	// StreamEvent is the huma event for the GenerateStream operation.
 	StreamEvent struct {
 		Text string `json:"text"`
 	}

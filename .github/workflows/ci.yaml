@@ -2,7 +2,6 @@ name: CI
 
 env:
   GO_VERSION: "stable"
-  GOLANGCI_LINT_VERSION: "latest"
 
 on:
   pull_request:
@@ -29,10 +28,10 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v8
+      - name: Run Revive
+        uses: morphy2k/revive-action@v2
         with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          config: revive.toml
 
   unit-tests:
     name: "Unit testing"
@@ -47,7 +46,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Run unit tests
-        run: go test -cover -coverprofile=coverage.txt ./...
+        run: go test -race -count=1 -timeout=30s $(go list ./... | grep -v vendor | grep -v third_party)
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4

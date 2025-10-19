@@ -11,7 +11,10 @@ import (
 type Env int
 
 const (
+	// EnvDevelopment is the development environment.
 	EnvDevelopment Env = iota
+
+	// EnvProduction is the production environment.
 	EnvProduction
 )
 

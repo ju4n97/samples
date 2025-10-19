@@ -14,7 +14,7 @@ type Registry struct {
 // NewRegistry creates a new backend registry.
 func NewRegistry() *Registry {
 	return &Registry{
-		backends: make(map[string]Backend),
+		backends: map[string]Backend{},
 	}
 }
 

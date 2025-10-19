@@ -8,8 +8,8 @@ import (
 type SourceType string
 
 const (
+	// SourceTypeHuggingFace represents a Hugging Face model repository source.
 	SourceTypeHuggingFace SourceType = "huggingface"
-	// TODO: implement SourceTypeLocal.
 )
 
 // Config holds the main configuration for the application.
@@ -86,9 +86,6 @@ func (m *ModelConfig) GetSource() (ModelSource, error) {
 	if m.Source.HuggingFace != nil {
 		return *m.Source.HuggingFace, nil
 	}
-	// if m.Source.Local != nil {
-	//     return *m.Source.Local, nil
-	// }
 
 	return nil, errors.New("no source configured for model")
 }
@@ -96,5 +93,4 @@ func (m *ModelConfig) GetSource() (ModelSource, error) {
 // SetHuggingFaceSource sets the Hugging Face source.
 func (m *ModelConfig) SetHuggingFaceSource(source HuggingFaceSource) {
 	m.Source.HuggingFace = &source
-	// m.Source.Local = nil
 }
