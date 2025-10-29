@@ -67,7 +67,7 @@ func (h *TTSHandler) handleSynthesize(ctx context.Context, input *SynthesizeInpu
 		},
 	)
 	if err != nil {
-		if errors.Is(err, model.ErrModelNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			return nil, huma.Error404NotFound("model not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to synthesize", err)

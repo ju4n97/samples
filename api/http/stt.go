@@ -97,7 +97,7 @@ func (h *STTHandler) handleTranscribe(ctx context.Context, input *TranscribeInpu
 		},
 	)
 	if err != nil {
-		if errors.Is(err, model.ErrModelNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			return nil, huma.Error404NotFound("model not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to transcribe", err)

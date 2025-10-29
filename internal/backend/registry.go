@@ -24,7 +24,7 @@ func (r *Registry) Register(b Backend) error {
 	defer r.mu.Unlock()
 
 	if _, ok := r.backends[b.Provider()]; ok {
-		return ErrBackendAlreadyRegistered
+		return ErrAlreadyRegistered
 	}
 
 	r.backends[b.Provider()] = b

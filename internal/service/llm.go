@@ -26,12 +26,12 @@ func NewLLM(backends *backend.Registry, models *model.Registry) *LLM {
 func (s *LLM) Generate(ctx context.Context, provider, modelID string, req *backend.Request) (*backend.Response, error) {
 	b, ok := s.backends.Get(provider)
 	if !ok {
-		return nil, backend.ErrBackendNotFound
+		return nil, backend.ErrNotFound
 	}
 
 	m, ok := s.models.Get(modelID)
 	if !ok {
-		return nil, model.ErrModelNotFound
+		return nil, model.ErrNotFound
 	}
 
 	breq := &backend.Request{
@@ -53,17 +53,17 @@ func (s *LLM) Generate(ctx context.Context, provider, modelID string, req *backe
 func (s *LLM) GenerateStream(ctx context.Context, provider, modelID string, req *backend.Request) (<-chan backend.StreamChunk, error) {
 	b, ok := s.backends.Get(provider)
 	if !ok {
-		return nil, backend.ErrBackendNotFound
+		return nil, backend.ErrNotFound
 	}
 
 	bs, ok := b.(backend.StreamingBackend)
 	if !ok {
-		return nil, backend.ErrBackendNotStreamable
+		return nil, backend.ErrNotStreamable
 	}
 
 	m, ok := s.models.Get(modelID)
 	if !ok {
-		return nil, model.ErrModelNotFound
+		return nil, model.ErrNotFound
 	}
 
 	breq := &backend.Request{

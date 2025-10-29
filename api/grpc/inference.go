@@ -214,9 +214,9 @@ func mapBackendError(err error) error {
 	}
 
 	switch {
-	case errors.Is(err, backend.ErrBackendNotFound):
+	case errors.Is(err, backend.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case errors.Is(err, model.ErrModelNotFound):
+	case errors.Is(err, model.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		if _, ok := status.FromError(err); ok {

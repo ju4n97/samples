@@ -98,7 +98,7 @@ func (h *LLMHandler) handleGenerate(ctx context.Context, input *GenerateInput) (
 		},
 	)
 	if err != nil {
-		if errors.Is(err, model.ErrModelNotFound) {
+		if errors.Is(err, model.ErrNotFound) {
 			return nil, huma.Error404NotFound("model not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to generate", err)
