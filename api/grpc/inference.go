@@ -156,9 +156,7 @@ func validateInferenceRequest(req *inferencev1.InferenceRequest) error {
 	if req.ModelId == "" {
 		return errors.New("model_id is required")
 	}
-	if len(req.Input) == 0 {
-		return errors.New("input is required")
-	}
+
 	return nil
 }
 

@@ -194,12 +194,28 @@ func (b *Backend) buildChatCompletionRequest(req *backend.Request, prompt string
 		p = map[string]any{}
 	}
 
-	messages := []ChatMessage{
-		{Role: "user", Content: prompt},
-	}
+	messages := []ChatMessage{}
 
-	if sysPrompt, ok := p["system_prompt"].(string); ok && sysPrompt != "" {
-		messages = append([]ChatMessage{{Role: "system", Content: sysPrompt}}, messages...)
+	if messagesJSON, ok := p["messages"].(string); ok && messagesJSON != "" {
+		var chatMsgs []map[string]string
+
+		if err := json.Unmarshal([]byte(messagesJSON), &chatMsgs); err == nil {
+			for _, msg := range chatMsgs {
+				messages = append(messages, ChatMessage{
+					Role:    msg["role"],
+					Content: msg["content"],
+				})
+			}
+		}
+	} else {
+		// fallback to single prompt
+		messages = []ChatMessage{
+			{Role: "user", Content: prompt},
+		}
+
+		if sysPrompt, ok := p["system_prompt"].(string); ok && sysPrompt != "" {
+			messages = append([]ChatMessage{{Role: "system", Content: sysPrompt}}, messages...)
+		}
 	}
 
 	return &ChatCompletionRequest{
